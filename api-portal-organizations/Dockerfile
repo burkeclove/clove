@@ -33,6 +33,9 @@ WORKDIR /root/
 # Copy the binary from builder
 COPY --from=builder /app/api-portal-organizations/organizations-api .
 
+# Copy the .env file
+COPY api-portal-organizations/.env .env
+
 # Expose port
 EXPOSE 8080
 

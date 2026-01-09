@@ -33,6 +33,12 @@ WORKDIR /root/
 # Copy the binary from builder
 COPY --from=builder /app/api-auth/auth-api .
 
+# Copy the .env file
+COPY api-auth/.env .env
+
+# Copy the keys directory
+COPY api-auth/keys ./keys
+
 # Expose ports (8080 for HTTP, 50051 for gRPC)
 EXPOSE 8080 50051
 

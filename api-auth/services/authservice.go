@@ -27,12 +27,12 @@ type AuthService struct {
 }
 
 func NewAuthService(q *sqlc.Queries) *AuthService {
-	privatePEM, err := readPEMFile("../keys/private.pem")
+	privatePEM, err := readPEMFile("./keys/private.pem")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	publicPEM, err := readPEMFile("../keys/public.pem")
+	publicPEM, err := readPEMFile("./keys/public.pem")
 	if err != nil {
 		log.Fatal(err)
 	}
