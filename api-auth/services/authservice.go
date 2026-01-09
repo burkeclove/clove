@@ -16,6 +16,7 @@ import (
 	"github.com/burkeclove/auth-api/internal"
 	"github.com/burkeclove/auth-api/models/requests"
 	"github.com/burkeclove/shared/db/sqlc"
+	"github.com/burkeclove/shared/db/helpers"
 
 	pb "github.com/burkeclove/shared/gen/go/protos"
 )
@@ -61,11 +62,16 @@ func (a *AuthService) CreateApiKey(c *gin.Context) {
 		return
 	}
 
-	log.Println("creating api key with name: ", req.Name)
-	//uuid := pgtype.UUID{Bytes: id, Valid: true}
+	log.Printf("creating api key with name: %s and for org: %s", req.Name, req.OrgId)
+	uuid, err := helpers.UUIDFromString(req.OrgId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	a.Q.CreateApiKey(context.Background(), sqlc.CreateApiKeyParams{
 		Name: req.Name,
-		//OrganizationID: pgtype.UUID,
+		OrganizationID: uuid,
 	})
 }
 
@@ -141,5 +147,32 @@ func (a *AuthService) CreateJwt(ctx context.Context, req *pb.CreateJwtRequest) (
 		Success: true,
 		Token: key,
 		ExpiresAt: exp.String(),
+	}, nil
+}
+
+func (a *AuthService) CreateKey(ctx context.Context, req *pb.CreateKeyRequest) (*pb.CreateKeyResponse, error) {
+	log.Println("creating api key for org: ", req.OrganizationId)
+	uuid, err := helpers.UUIDFromString(req.OrganizationId)
+	if err != nil {
+		return &pb.CreateKeyResponse{
+			Success: false,
+			ErrorMessage: err.Error(),
+		}, err
+	}
+
+	_, err = a.Q.CreateApiKey(context.Background(), sqlc.CreateApiKeyParams{
+		Name: "First Key",
+		OrganizationID: uuid,
+	})
+	if err != nil {
+		return &pb.CreateKeyResponse{
+			Success: false,
+			ErrorMessage: err.Error(),
+		}, err
+	}
+	return &pb.CreateKeyResponse{
+		Success: true,
+		KeyId: "",
+		Key: "",
 	}, nil
 }

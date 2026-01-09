@@ -35,6 +35,7 @@ message AuthenticateJwtResponse {
 
 message CreateKeyRequest {
   string organization_id = 1;
+  string key_name = 2;
 }
 
 message CreateKeyResponse {

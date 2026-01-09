@@ -73,6 +73,37 @@ Connection string used by services:
 postgres://cloveuser:clovepassword@postgres:5432/clovedb?sslmode=disable
 ```
 
+## Database Migrations
+
+Migrations are automatically run when the postgres container is first created. The migrations are located in `shared/db/migrations/` and are mounted to the postgres container.
+
+**Important**: Migrations only run on initial database creation. If you need to run migrations on an existing database:
+
+1. Stop and remove the postgres container and volume:
+```bash
+docker-compose down -v
+```
+
+2. Start fresh (migrations will run automatically):
+```bash
+docker-compose up --build
+```
+
+### Manually Running Migrations
+
+If you need to run migrations manually on an existing database:
+
+```bash
+docker-compose exec postgres psql -U cloveuser -d clovedb -f /docker-entrypoint-initdb.d/0001_init.sql
+```
+
+Or to run all migration files:
+```bash
+for file in ./shared/db/migrations/*.sql; do
+  docker-compose exec -T postgres psql -U cloveuser -d clovedb < "$file"
+done
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -130,19 +161,16 @@ docker-compose exec api-auth sh
 docker-compose exec postgres psql -U cloveuser -d clovedb
 ```
 
-### Database Migrations
+### Adding New Migrations
 
-To run database migrations, you can execute them through the postgres container:
+To add new migration files:
 
+1. Create a new `.sql` file in `shared/db/migrations/` with a numbered prefix (e.g., `0002_add_users_table.sql`)
+2. For existing databases, run the migration manually:
 ```bash
-docker-compose exec postgres psql -U cloveuser -d clovedb -f /path/to/migration.sql
+docker-compose exec postgres psql -U cloveuser -d clovedb -f /docker-entrypoint-initdb.d/0002_add_users_table.sql
 ```
-
-Or copy the migration file and run it:
-```bash
-docker cp migration.sql postgres:/tmp/
-docker-compose exec postgres psql -U cloveuser -d clovedb -f /tmp/migration.sql
-```
+3. For fresh databases, the migration will run automatically on first startup
 
 ## Troubleshooting
 

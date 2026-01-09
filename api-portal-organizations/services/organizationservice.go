@@ -27,23 +27,28 @@ func (o *OrganizationService) CreateOrganization(c *gin.Context) {
 		return
 	}
 
-	log.Println("creating api key with name: ", req.Name)
+	log.Println("creating org with name: ", req.Name)
 	//uuid := pgtype.UUID{Bytes: id, Valid: true}
 	org, err := o.Q.CreateOrganization(context.Background(), req.Name) 
 	if err != nil {
+		log.Println("an error occured while creating organization", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	// create api key
+	log.Println("about to create api key... org id is: ", org.ID)
 	createKeyReq := pb.CreateKeyRequest{
 		OrganizationId: org.ID.String(),
 	}
+
+	log.Println("request has been formed")
 	res, err := o.AuthClient.CreateKey(c.Request.Context(), &createKeyReq)
 
 	id := res.KeyId
 	key := res.Key
 	
+	log.Println("key created... key id:", id)
 	createOrgResponse := responses.CreateOrganizationResponse{
 		Name: org.Name,
 		Id: org.ID.String(),

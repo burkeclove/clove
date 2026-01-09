@@ -248,6 +248,7 @@ func (x *AuthenticateJwtResponse) GetUserId() string {
 type CreateKeyRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	OrganizationId string                 `protobuf:"bytes,1,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	KeyName        string                 `protobuf:"bytes,2,opt,name=key_name,json=keyName,proto3" json:"key_name,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -285,6 +286,13 @@ func (*CreateKeyRequest) Descriptor() ([]byte, []int) {
 func (x *CreateKeyRequest) GetOrganizationId() string {
 	if x != nil {
 		return x.OrganizationId
+	}
+	return ""
+}
+
+func (x *CreateKeyRequest) GetKeyName() string {
+	if x != nil {
+		return x.KeyName
 	}
 	return ""
 }
@@ -495,9 +503,10 @@ const file_protos_auth_proto_rawDesc = "" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12#\n" +
 	"\rerror_message\x18\x03 \x01(\tR\ferrorMessage\x12\x17\n" +
-	"\auser_id\x18\x04 \x01(\tR\x06userId\";\n" +
+	"\auser_id\x18\x04 \x01(\tR\x06userId\"V\n" +
 	"\x10CreateKeyRequest\x12'\n" +
-	"\x0forganization_id\x18\x01 \x01(\tR\x0eorganizationId\"{\n" +
+	"\x0forganization_id\x18\x01 \x01(\tR\x0eorganizationId\x12\x19\n" +
+	"\bkey_name\x18\x02 \x01(\tR\akeyName\"{\n" +
 	"\x11CreateKeyResponse\x12\x15\n" +
 	"\x06key_id\x18\x01 \x01(\tR\x05keyId\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x18\n" +

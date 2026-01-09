@@ -3,4 +3,5 @@ package requests
 
 type CreateApiKeyRequest struct {
 	Name string `json:"name" binding:"required"`
+	OrgId string `json:"orgId" binding:"required"`
 }
