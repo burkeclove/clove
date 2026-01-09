@@ -1,0 +1,9 @@
+go 1.25.3
+
+use (
+	./api-auth
+	./api-minio
+	./api-portal-organizations
+	./api-portal-users
+	./shared
+)

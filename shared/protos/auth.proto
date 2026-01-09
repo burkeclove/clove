@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/burkeclove/shared/protos";
+
+service AuthService {
+    rpc AuthenticateKey(AuthenticateKeyRequest) returns (AuthenticateKeyResponse);
+    rpc AuthenticateJwt(AuthenticateJwtRequest) returns (AuthenticateJwtResponse);
+    rpc CreateKey(CreateKeyRequest) returns (CreateKeyResponse);
+    rpc CreateJwt(CreateJwtRequest) returns (CreateJwtResponse);
+}
+
+message AuthenticateKeyRequest {
+  string key = 1;
+}
+
+message AuthenticateKeyResponse {
+  string org_id = 1;
+  bool success = 2;
+  string error_message = 3;
+  string key_id = 4;
+}
+
+message AuthenticateJwtRequest {
+  string authorization_header = 1;
+}
+
+message AuthenticateJwtResponse {
+  string email = 1;
+  bool success = 2;
+  string error_message = 3;
+  string user_id = 4;
+}
+
+message CreateKeyRequest {
+  string organization_id = 1;
+}
+
+message CreateKeyResponse {
+  string key_id = 1;
+  string key = 2;
+  bool success = 3;
+  string error_message = 4;
+}
+
+message CreateJwtRequest {
+  string user_id = 1;
+  string email = 2;
+}
+
+message CreateJwtResponse {
+  string token = 1;
+  string expires_at = 2;
+  bool success = 3;
+  string error_message = 4;
+}
