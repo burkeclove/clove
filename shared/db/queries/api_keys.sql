@@ -9,7 +9,7 @@ SELECT * FROM api_keys WHERE id = $1;
 -- name: ListApiKeys :many
 SELECT * FROM api_keys ORDER BY created_at DESC LIMIT $1;
 
--- name: GetOrgFromApiKey :many
+-- name: GetOrgFromApiKey :one
 SELECT organizations.* FROM api_keys 
 JOIN organizations on api_keys.organization_id = organizations.id
 WHERE api_keys.key_hash = $1

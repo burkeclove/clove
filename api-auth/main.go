@@ -57,7 +57,7 @@ func main() {
 	// create auth middleware
 	r := gin.Default()
 	auth := r.Group("/api/auth")	
-	auth.Use(middleware.ApiKeyMiddleware(q, auth_service))
+	auth.Use(middleware.PortalMiddleware(q, auth_service.JwtService.Validate))
 	{
 		auth.GET("/", auth_service.GetApiKeys)
 		auth.POST("/", auth_service.CreateApiKey)

@@ -1,22 +1,40 @@
-FROM golang:1.24-bookworm as builder
+# Build stage
+FROM golang:1.25.3-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git
+
+# Set working directory
 WORKDIR /app
-COPY go.* ./
+
+# Copy shared module first
+COPY shared/ ./shared/
+
+# Copy api-auth module
+COPY api-auth/ ./api-auth/
+
+# Set working directory to the API
+WORKDIR /app/api-auth
+
+# Download dependencies (without go.work)
 RUN go mod download
-COPY . ./
-RUN go build -v -o server
 
-FROM debian:bookworm-slim
-RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    ca-certificates \
-    ipmitool && \
-    rm -rf /var/lib/apt/lists/*
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o auth-api .
 
-# Copy the binary
-COPY --from=builder /app/server /app/server
+# Runtime stage
+FROM alpine:latest
 
-# Copy environment-specific .env file based on build arg
-ARG BUILD_MODE=local
-COPY .env.${BUILD_MODE} /.env
+# Install ca-certificates for HTTPS
+RUN apk --no-cache add ca-certificates
 
-EXPOSE 50000
-CMD ["/app/server"]
+WORKDIR /root/
+
+# Copy the binary from builder
+COPY --from=builder /app/api-auth/auth-api .
+
+# Expose ports (8080 for HTTP, 50051 for gRPC)
+EXPOSE 8080 50051
+
+# Run the binary
+CMD ["./auth-api"]

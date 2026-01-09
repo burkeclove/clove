@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: cloveuser
+      POSTGRES_PASSWORD: clovepassword
+      POSTGRES_DB: clovedb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloveuser -d clovedb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clove-network
+
+  api-auth:
+    build:
+      context: .
+      dockerfile: ./api-auth/Dockerfile
+    container_name: api-auth
+    environment:
+      - DATABASE_URL=postgres://cloveuser:clovepassword@postgres:5432/clovedb?sslmode=disable
+    ports:
+      - "8081:8080"
+      - "50051:50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - clove-network
+    restart: unless-stopped
+
+  api-portal-users:
+    build:
+      context: .
+      dockerfile: ./api-portal-users/Dockerfile
+    container_name: api-portal-users
+    environment:
+      - DATABASE_URL=postgres://cloveuser:clovepassword@postgres:5432/clovedb?sslmode=disable
+      - AUTH_CONNECTION=api-auth:50051
+    ports:
+      - "8082:8080"
+    depends_on:
+      - postgres
+      - api-auth
+    networks:
+      - clove-network
+    restart: unless-stopped
+
+  api-portal-organizations:
+    build:
+      context: .
+      dockerfile: ./api-portal-organizations/Dockerfile
+    container_name: api-portal-organizations
+    environment:
+      - DATABASE_URL=postgres://cloveuser:clovepassword@postgres:5432/clovedb?sslmode=disable
+      - AUTH_CONNECTION=api-auth:50051
+    ports:
+      - "8083:8080"
+    depends_on:
+      - postgres
+      - api-auth
+    networks:
+      - clove-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api-auth
+      - api-portal-users
+      - api-portal-organizations
+    networks:
+      - clove-network
+    restart: unless-stopped
+
+networks:
+  clove-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

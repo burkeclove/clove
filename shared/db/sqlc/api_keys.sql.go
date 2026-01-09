@@ -52,36 +52,23 @@ func (q *Queries) GetApiKeyByID(ctx context.Context, id pgtype.UUID) (ApiKey, er
 	return i, err
 }
 
-const getOrgFromApiKey = `-- name: GetOrgFromApiKey :many
+const getOrgFromApiKey = `-- name: GetOrgFromApiKey :one
 SELECT organizations.id, organizations.name, organizations.created_at, organizations.updated_at FROM api_keys 
 JOIN organizations on api_keys.organization_id = organizations.id
 WHERE api_keys.key_hash = $1
 LIMIT 1
 `
 
-func (q *Queries) GetOrgFromApiKey(ctx context.Context, keyHash string) ([]Organization, error) {
-	rows, err := q.db.Query(ctx, getOrgFromApiKey, keyHash)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Organization
-	for rows.Next() {
-		var i Organization
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetOrgFromApiKey(ctx context.Context, keyHash string) (Organization, error) {
+	row := q.db.QueryRow(ctx, getOrgFromApiKey, keyHash)
+	var i Organization
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const listApiKeys = `-- name: ListApiKeys :many

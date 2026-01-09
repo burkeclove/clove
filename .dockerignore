@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+README.md
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+
+# Build artifacts
+*/users-api
+*/organizations-api
+*/auth-api
+*/*.exe
+
+# Environment files (will be set via docker-compose)
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test files
+*_test.go

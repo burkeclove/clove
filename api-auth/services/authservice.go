@@ -14,7 +14,6 @@ import (
 	"net/http"
 	//"github.com/jackc/pgx/v5/pgtype"
 	"github.com/burkeclove/auth-api/internal"
-	"github.com/burkeclove/auth-api/middleware"
 	"github.com/burkeclove/auth-api/models/requests"
 	"github.com/burkeclove/shared/db/sqlc"
 
@@ -24,7 +23,7 @@ import (
 type AuthService struct {
 	Q *sqlc.Queries
 	pb.UnimplementedAuthServiceServer
-	jwtService *JwtService
+	JwtService *JwtService
 }
 
 func NewAuthService(q *sqlc.Queries) *AuthService {
@@ -51,7 +50,7 @@ func NewAuthService(q *sqlc.Queries) *AuthService {
 	if err != nil {
 		log.Fatalf("an error occured while creating jwt svc %s", err.Error())
 	}
-	return &AuthService{Q: q, jwtService: jwtSvc}
+	return &AuthService{Q: q, JwtService: jwtSvc}
 }
 
 func (a *AuthService) CreateApiKey(c *gin.Context) {
@@ -81,7 +80,8 @@ func (a *AuthService) GetApiKeys(c *gin.Context) {
 // GRPC
 func (a *AuthService) AuthenticateKey(ctx context.Context, req *pb.AuthenticateKeyRequest) (*pb.AuthenticateKeyResponse, error) {
 	key := req.Key			
-	org, err := middleware.GetOrganizationFromApiKey(a.Q, key)
+	
+	getOrgRet, err := a.Q.GetOrgFromApiKey(ctx, key)
 	if err != nil {
 		return &pb.AuthenticateKeyResponse{
 			Success:  false,
@@ -89,9 +89,9 @@ func (a *AuthService) AuthenticateKey(ctx context.Context, req *pb.AuthenticateK
 		}, err
 	} else {
 		return &pb.AuthenticateKeyResponse{
-			Success: org != nil,
+			Success: getOrgRet.ID.Valid,
 			ErrorMessage: "",
-			OrgId: org.ID.String(),
+			OrgId: getOrgRet.ID.String(),
 		}, nil
 	}
 }
@@ -106,7 +106,7 @@ func (a *AuthService) AuthenticateJwt(ctx context.Context, req *pb.AuthenticateJ
 		}, errors.New("Length of authorization header is not 2")
 	}
 	jwt := parts[1]
-	claims, err := a.jwtService.Validate(ctx, jwt)	
+	claims, err := a.JwtService.Validate(ctx, jwt)	
 	if err != nil {
 		return &pb.AuthenticateJwtResponse{
 			Success:  false,
@@ -129,7 +129,7 @@ func (a *AuthService) CreateJwt(ctx context.Context, req *pb.CreateJwtRequest) (
 			ErrorMessage: "The jwt requires an email and user id",
 		}, errors.New("The jwt requires an email and user id")
 	}
-	key, exp, err := a.jwtService.Mint(ctx, req.UserId, req.Email)
+	key, exp, err := a.JwtService.Mint(ctx, req.UserId, req.Email)
 	if err != nil {
 		errMsg := fmt.Sprintf("An error occured while creating a jwt: %s", err.Error())
 		return &pb.CreateJwtResponse{
