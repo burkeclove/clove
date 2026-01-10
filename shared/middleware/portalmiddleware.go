@@ -28,13 +28,10 @@ func PortalMiddleware(q *sqlc.Queries, auth_conn pb.AuthServiceClient) gin.Handl
 		defer cancel()
 
 		check, err := auth_conn.AuthenticateJwt(ctx, &req)		
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if err != nil || !check.Success{
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
-		} else if !check.Success {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing authorization header"})
-			return
-		}
+		} 
 
 		c.Set("user_id", check.UserId)
 		c.Set("email", check.Email)

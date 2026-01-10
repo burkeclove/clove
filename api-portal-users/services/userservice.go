@@ -4,13 +4,12 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"github.com/burkeclove/shared/db/helpers"
+	"github.com/burkeclove/shared/db/sqlc"
 	pb "github.com/burkeclove/shared/gen/go/protos"
 	"github.com/burkeclove/users-api/models/requests"
 	"github.com/burkeclove/users-api/models/responses"
-	"github.com/burkeclove/users-api/functions/passwords"
-	"github.com/burkeclove/shared/db/helpers"
 	"github.com/gin-gonic/gin"
-	"github.com/burkeclove/shared/db/sqlc"
 )
 
 type UserService struct {
@@ -30,18 +29,18 @@ func (o *UserService) CreateUser(c *gin.Context) {
 	}
 
 	log.Println("creating user with email: ", req.Email)
-	//uuid := pgtype.UUID{Bytes: id, Valid: true}
 
-	// create password hash
-	params := passwords.DefaultParams
-	password, err := passwords.HashPassword(req.Password, params)
-	if err != nil {
+	hashPassReq := pb.HashPasswordRequest{
+		Password: req.Password,	
+	}
+	hashPassRes, err := o.AuthClient.HashPassword(c.Request.Context(), &hashPassReq)
+	if err != nil || !hashPassRes.Success {
 		log.Fatalf("an error occured while hashing the password: %s", err.Error())
 	}
 
 	user, err := o.Q.CreateUser(context.Background(), sqlc.CreateUserParams{
 		Email: req.Email,
-		PasswordHash: password,
+		PasswordHash: hashPassRes.PasswordHash,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

@@ -1,9 +1,9 @@
 package services
 
 import (
-	"fmt"
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -15,8 +15,9 @@ import (
 	//"github.com/jackc/pgx/v5/pgtype"
 	"github.com/burkeclove/auth-api/internal"
 	"github.com/burkeclove/auth-api/models/requests"
-	"github.com/burkeclove/shared/db/sqlc"
 	"github.com/burkeclove/shared/db/helpers"
+	"github.com/burkeclove/shared/db/sqlc"
+	"github.com/burkeclove/auth-api/functions/passwords"
 
 	pb "github.com/burkeclove/shared/gen/go/protos"
 )
@@ -215,4 +216,57 @@ func (a *AuthService) CreateKey(ctx context.Context, req *pb.CreateKeyRequest) (
 		KeyId: "",
 		Key: "",
 	}, nil
+}
+
+func (a *AuthService) HashPassword(ctx context.Context, req *pb.HashPasswordRequest) (*pb.HashPasswordResponse, error) {
+	log.Println("hashing password")
+	passwordHash, err := passwords.HashPassword(req.Password, passwords.DefaultParams)
+	if err != nil {
+		return &pb.HashPasswordResponse{
+			Success: false,
+			ErrorMessage: err.Error(),
+		}, err
+	}
+
+	return &pb.HashPasswordResponse{
+		Success: true,
+		PasswordHash: passwordHash,
+	}, nil
+}
+
+func (a *AuthService) Login(c *gin.Context) {
+	var req requests.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// hash password
+	password_hash, err := passwords.HashPassword(req.Password, passwords.DefaultParams)
+	if err != nil {
+		log.Println("an error occured while hashing password: ", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// get user
+	user, err := a.Q.GetUserByEmailPassword(c.Request.Context(), sqlc.GetUserByEmailPasswordParams{
+		Email: req.Email,
+		PasswordHash: password_hash,
+	})		
+	if err != nil {
+		log.Println("an error occured while getting user by email password: ", err.Error())
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	key, _, err := a.JwtService.Mint(c.Request.Context(), user.ID.String(), user.Email)
+	if err != nil {
+		errMsg := fmt.Sprintf("An error occured while creating a jwt: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})	
+		return
+	}
+
+	// generate jwt
+	c.JSON(http.StatusUnauthorized, gin.H{"user": user, "jwt": key})
 }

@@ -597,6 +597,110 @@ func (x *CheckUserOrganizationResponse) GetCheck() bool {
 	return false
 }
 
+type HashPasswordRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Password      string                 `protobuf:"bytes,1,opt,name=password,proto3" json:"password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HashPasswordRequest) Reset() {
+	*x = HashPasswordRequest{}
+	mi := &file_protos_auth_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HashPasswordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HashPasswordRequest) ProtoMessage() {}
+
+func (x *HashPasswordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_protos_auth_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HashPasswordRequest.ProtoReflect.Descriptor instead.
+func (*HashPasswordRequest) Descriptor() ([]byte, []int) {
+	return file_protos_auth_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *HashPasswordRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+type HashPasswordResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	ErrorMessage  string                 `protobuf:"bytes,2,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	PasswordHash  string                 `protobuf:"bytes,3,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HashPasswordResponse) Reset() {
+	*x = HashPasswordResponse{}
+	mi := &file_protos_auth_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HashPasswordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HashPasswordResponse) ProtoMessage() {}
+
+func (x *HashPasswordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_protos_auth_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HashPasswordResponse.ProtoReflect.Descriptor instead.
+func (*HashPasswordResponse) Descriptor() ([]byte, []int) {
+	return file_protos_auth_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *HashPasswordResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *HashPasswordResponse) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+func (x *HashPasswordResponse) GetPasswordHash() string {
+	if x != nil {
+		return x.PasswordHash
+	}
+	return ""
+}
+
 var File_protos_auth_proto protoreflect.FileDescriptor
 
 const file_protos_auth_proto_rawDesc = "" +
@@ -639,13 +743,20 @@ const file_protos_auth_proto_rawDesc = "" +
 	"\x1dCheckUserOrganizationResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12#\n" +
 	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\x12\x14\n" +
-	"\x05check\x18\x03 \x01(\bR\x05check2\xf7\x02\n" +
+	"\x05check\x18\x03 \x01(\bR\x05check\"1\n" +
+	"\x13HashPasswordRequest\x12\x1a\n" +
+	"\bpassword\x18\x01 \x01(\tR\bpassword\"z\n" +
+	"\x14HashPasswordResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12#\n" +
+	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\x12#\n" +
+	"\rpassword_hash\x18\x03 \x01(\tR\fpasswordHash2\xba\x03\n" +
 	"\vAuthService\x12J\n" +
 	"\x0fAuthenticateKey\x12\x1a.pb.AuthenticateKeyRequest\x1a\x1b.pb.AuthenticateKeyResponse\x12J\n" +
 	"\x0fAuthenticateJwt\x12\x1a.pb.AuthenticateJwtRequest\x1a\x1b.pb.AuthenticateJwtResponse\x128\n" +
 	"\tCreateKey\x12\x14.pb.CreateKeyRequest\x1a\x15.pb.CreateKeyResponse\x128\n" +
 	"\tCreateJwt\x12\x14.pb.CreateJwtRequest\x1a\x15.pb.CreateJwtResponse\x12\\\n" +
-	"\x15CheckUserOrganization\x12 .pb.CheckUserOrganizationRequest\x1a!.pb.CheckUserOrganizationResponseB%Z#github.com/burkeclove/shared/protosb\x06proto3"
+	"\x15CheckUserOrganization\x12 .pb.CheckUserOrganizationRequest\x1a!.pb.CheckUserOrganizationResponse\x12A\n" +
+	"\fHashPassword\x12\x17.pb.HashPasswordRequest\x1a\x18.pb.HashPasswordResponseB%Z#github.com/burkeclove/shared/protosb\x06proto3"
 
 var (
 	file_protos_auth_proto_rawDescOnce sync.Once
@@ -659,7 +770,7 @@ func file_protos_auth_proto_rawDescGZIP() []byte {
 	return file_protos_auth_proto_rawDescData
 }
 
-var file_protos_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_protos_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_protos_auth_proto_goTypes = []any{
 	(*AuthenticateKeyRequest)(nil),        // 0: pb.AuthenticateKeyRequest
 	(*AuthenticateKeyResponse)(nil),       // 1: pb.AuthenticateKeyResponse
@@ -671,23 +782,27 @@ var file_protos_auth_proto_goTypes = []any{
 	(*CreateJwtResponse)(nil),             // 7: pb.CreateJwtResponse
 	(*CheckUserOrganizationRequest)(nil),  // 8: pb.CheckUserOrganizationRequest
 	(*CheckUserOrganizationResponse)(nil), // 9: pb.CheckUserOrganizationResponse
+	(*HashPasswordRequest)(nil),           // 10: pb.HashPasswordRequest
+	(*HashPasswordResponse)(nil),          // 11: pb.HashPasswordResponse
 }
 var file_protos_auth_proto_depIdxs = []int32{
-	0, // 0: pb.AuthService.AuthenticateKey:input_type -> pb.AuthenticateKeyRequest
-	2, // 1: pb.AuthService.AuthenticateJwt:input_type -> pb.AuthenticateJwtRequest
-	4, // 2: pb.AuthService.CreateKey:input_type -> pb.CreateKeyRequest
-	6, // 3: pb.AuthService.CreateJwt:input_type -> pb.CreateJwtRequest
-	8, // 4: pb.AuthService.CheckUserOrganization:input_type -> pb.CheckUserOrganizationRequest
-	1, // 5: pb.AuthService.AuthenticateKey:output_type -> pb.AuthenticateKeyResponse
-	3, // 6: pb.AuthService.AuthenticateJwt:output_type -> pb.AuthenticateJwtResponse
-	5, // 7: pb.AuthService.CreateKey:output_type -> pb.CreateKeyResponse
-	7, // 8: pb.AuthService.CreateJwt:output_type -> pb.CreateJwtResponse
-	9, // 9: pb.AuthService.CheckUserOrganization:output_type -> pb.CheckUserOrganizationResponse
-	5, // [5:10] is the sub-list for method output_type
-	0, // [0:5] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0,  // 0: pb.AuthService.AuthenticateKey:input_type -> pb.AuthenticateKeyRequest
+	2,  // 1: pb.AuthService.AuthenticateJwt:input_type -> pb.AuthenticateJwtRequest
+	4,  // 2: pb.AuthService.CreateKey:input_type -> pb.CreateKeyRequest
+	6,  // 3: pb.AuthService.CreateJwt:input_type -> pb.CreateJwtRequest
+	8,  // 4: pb.AuthService.CheckUserOrganization:input_type -> pb.CheckUserOrganizationRequest
+	10, // 5: pb.AuthService.HashPassword:input_type -> pb.HashPasswordRequest
+	1,  // 6: pb.AuthService.AuthenticateKey:output_type -> pb.AuthenticateKeyResponse
+	3,  // 7: pb.AuthService.AuthenticateJwt:output_type -> pb.AuthenticateJwtResponse
+	5,  // 8: pb.AuthService.CreateKey:output_type -> pb.CreateKeyResponse
+	7,  // 9: pb.AuthService.CreateJwt:output_type -> pb.CreateJwtResponse
+	9,  // 10: pb.AuthService.CheckUserOrganization:output_type -> pb.CheckUserOrganizationResponse
+	11, // 11: pb.AuthService.HashPassword:output_type -> pb.HashPasswordResponse
+	6,  // [6:12] is the sub-list for method output_type
+	0,  // [0:6] is the sub-list for method input_type
+	0,  // [0:0] is the sub-list for extension type_name
+	0,  // [0:0] is the sub-list for extension extendee
+	0,  // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_protos_auth_proto_init() }
@@ -701,7 +816,7 @@ func file_protos_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_protos_auth_proto_rawDesc), len(file_protos_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

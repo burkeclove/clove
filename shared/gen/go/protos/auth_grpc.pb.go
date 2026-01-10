@@ -24,6 +24,7 @@ const (
 	AuthService_CreateKey_FullMethodName             = "/pb.AuthService/CreateKey"
 	AuthService_CreateJwt_FullMethodName             = "/pb.AuthService/CreateJwt"
 	AuthService_CheckUserOrganization_FullMethodName = "/pb.AuthService/CheckUserOrganization"
+	AuthService_HashPassword_FullMethodName          = "/pb.AuthService/HashPassword"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -35,6 +36,7 @@ type AuthServiceClient interface {
 	CreateKey(ctx context.Context, in *CreateKeyRequest, opts ...grpc.CallOption) (*CreateKeyResponse, error)
 	CreateJwt(ctx context.Context, in *CreateJwtRequest, opts ...grpc.CallOption) (*CreateJwtResponse, error)
 	CheckUserOrganization(ctx context.Context, in *CheckUserOrganizationRequest, opts ...grpc.CallOption) (*CheckUserOrganizationResponse, error)
+	HashPassword(ctx context.Context, in *HashPasswordRequest, opts ...grpc.CallOption) (*HashPasswordResponse, error)
 }
 
 type authServiceClient struct {
@@ -95,6 +97,16 @@ func (c *authServiceClient) CheckUserOrganization(ctx context.Context, in *Check
 	return out, nil
 }
 
+func (c *authServiceClient) HashPassword(ctx context.Context, in *HashPasswordRequest, opts ...grpc.CallOption) (*HashPasswordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HashPasswordResponse)
+	err := c.cc.Invoke(ctx, AuthService_HashPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations should embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -104,6 +116,7 @@ type AuthServiceServer interface {
 	CreateKey(context.Context, *CreateKeyRequest) (*CreateKeyResponse, error)
 	CreateJwt(context.Context, *CreateJwtRequest) (*CreateJwtResponse, error)
 	CheckUserOrganization(context.Context, *CheckUserOrganizationRequest) (*CheckUserOrganizationResponse, error)
+	HashPassword(context.Context, *HashPasswordRequest) (*HashPasswordResponse, error)
 }
 
 // UnimplementedAuthServiceServer should be embedded to have
@@ -127,6 +140,9 @@ func (UnimplementedAuthServiceServer) CreateJwt(context.Context, *CreateJwtReque
 }
 func (UnimplementedAuthServiceServer) CheckUserOrganization(context.Context, *CheckUserOrganizationRequest) (*CheckUserOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckUserOrganization not implemented")
+}
+func (UnimplementedAuthServiceServer) HashPassword(context.Context, *HashPasswordRequest) (*HashPasswordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HashPassword not implemented")
 }
 func (UnimplementedAuthServiceServer) testEmbeddedByValue() {}
 
@@ -238,6 +254,24 @@ func _AuthService_CheckUserOrganization_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_HashPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HashPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).HashPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_HashPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).HashPassword(ctx, req.(*HashPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -264,6 +298,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckUserOrganization",
 			Handler:    _AuthService_CheckUserOrganization_Handler,
+		},
+		{
+			MethodName: "HashPassword",
+			Handler:    _AuthService_HashPassword_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

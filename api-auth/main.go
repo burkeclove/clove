@@ -41,28 +41,32 @@ func main() {
 
 	// Create a new gRPC server
 	s := grpc.NewServer()
-	
+
 	// Register our service
 	auth_service := services.NewAuthService(q)
 	pb.RegisterAuthServiceServer(s, auth_service)
-	
+
 	// Register reflection service for easier debugging
 	reflection.Register(s)
 
-	// Start serving
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
+	// Start gRPC server in a goroutine
+	go func() {
+		log.Printf("Starting gRPC server on :%d", grpcPort)
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve gRPC: %v", err)
+		}
+	}()
 
 	// create auth middleware
 	r := gin.Default()
-	auth := r.Group("/api/auth")	
+	auth := r.Group("/api/auth")
+	auth.POST("/login", auth_service.Login)
 	auth.Use(middleware.PortalMiddleware(q, auth_service.JwtService.Validate))
 	{
 		auth.GET("/", auth_service.GetApiKeys)
 		auth.POST("/", auth_service.CreateApiKey)
 	}
 
-	log.Println("About to serve on :8080")
+	log.Printf("Starting HTTP server on :%d", httpPort)
     r.Run(":8080")
 }
