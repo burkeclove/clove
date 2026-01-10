@@ -485,6 +485,118 @@ func (x *CreateJwtResponse) GetErrorMessage() string {
 	return ""
 }
 
+type CheckUserOrganizationRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	UserId         string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	OrganizationId string                 `protobuf:"bytes,2,opt,name=organization_id,json=organizationId,proto3" json:"organization_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CheckUserOrganizationRequest) Reset() {
+	*x = CheckUserOrganizationRequest{}
+	mi := &file_protos_auth_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckUserOrganizationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckUserOrganizationRequest) ProtoMessage() {}
+
+func (x *CheckUserOrganizationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_protos_auth_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckUserOrganizationRequest.ProtoReflect.Descriptor instead.
+func (*CheckUserOrganizationRequest) Descriptor() ([]byte, []int) {
+	return file_protos_auth_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CheckUserOrganizationRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *CheckUserOrganizationRequest) GetOrganizationId() string {
+	if x != nil {
+		return x.OrganizationId
+	}
+	return ""
+}
+
+type CheckUserOrganizationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	ErrorMessage  string                 `protobuf:"bytes,2,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	Check         bool                   `protobuf:"varint,3,opt,name=check,proto3" json:"check,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckUserOrganizationResponse) Reset() {
+	*x = CheckUserOrganizationResponse{}
+	mi := &file_protos_auth_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckUserOrganizationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckUserOrganizationResponse) ProtoMessage() {}
+
+func (x *CheckUserOrganizationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_protos_auth_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckUserOrganizationResponse.ProtoReflect.Descriptor instead.
+func (*CheckUserOrganizationResponse) Descriptor() ([]byte, []int) {
+	return file_protos_auth_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CheckUserOrganizationResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *CheckUserOrganizationResponse) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+func (x *CheckUserOrganizationResponse) GetCheck() bool {
+	if x != nil {
+		return x.Check
+	}
+	return false
+}
+
 var File_protos_auth_proto protoreflect.FileDescriptor
 
 const file_protos_auth_proto_rawDesc = "" +
@@ -520,12 +632,20 @@ const file_protos_auth_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x02 \x01(\tR\texpiresAt\x12\x18\n" +
 	"\asuccess\x18\x03 \x01(\bR\asuccess\x12#\n" +
-	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage2\x99\x02\n" +
+	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\"`\n" +
+	"\x1cCheckUserOrganizationRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12'\n" +
+	"\x0forganization_id\x18\x02 \x01(\tR\x0eorganizationId\"t\n" +
+	"\x1dCheckUserOrganizationResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12#\n" +
+	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\x12\x14\n" +
+	"\x05check\x18\x03 \x01(\bR\x05check2\xf7\x02\n" +
 	"\vAuthService\x12J\n" +
 	"\x0fAuthenticateKey\x12\x1a.pb.AuthenticateKeyRequest\x1a\x1b.pb.AuthenticateKeyResponse\x12J\n" +
 	"\x0fAuthenticateJwt\x12\x1a.pb.AuthenticateJwtRequest\x1a\x1b.pb.AuthenticateJwtResponse\x128\n" +
 	"\tCreateKey\x12\x14.pb.CreateKeyRequest\x1a\x15.pb.CreateKeyResponse\x128\n" +
-	"\tCreateJwt\x12\x14.pb.CreateJwtRequest\x1a\x15.pb.CreateJwtResponseB%Z#github.com/burkeclove/shared/protosb\x06proto3"
+	"\tCreateJwt\x12\x14.pb.CreateJwtRequest\x1a\x15.pb.CreateJwtResponse\x12\\\n" +
+	"\x15CheckUserOrganization\x12 .pb.CheckUserOrganizationRequest\x1a!.pb.CheckUserOrganizationResponseB%Z#github.com/burkeclove/shared/protosb\x06proto3"
 
 var (
 	file_protos_auth_proto_rawDescOnce sync.Once
@@ -539,28 +659,32 @@ func file_protos_auth_proto_rawDescGZIP() []byte {
 	return file_protos_auth_proto_rawDescData
 }
 
-var file_protos_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_protos_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_protos_auth_proto_goTypes = []any{
-	(*AuthenticateKeyRequest)(nil),  // 0: pb.AuthenticateKeyRequest
-	(*AuthenticateKeyResponse)(nil), // 1: pb.AuthenticateKeyResponse
-	(*AuthenticateJwtRequest)(nil),  // 2: pb.AuthenticateJwtRequest
-	(*AuthenticateJwtResponse)(nil), // 3: pb.AuthenticateJwtResponse
-	(*CreateKeyRequest)(nil),        // 4: pb.CreateKeyRequest
-	(*CreateKeyResponse)(nil),       // 5: pb.CreateKeyResponse
-	(*CreateJwtRequest)(nil),        // 6: pb.CreateJwtRequest
-	(*CreateJwtResponse)(nil),       // 7: pb.CreateJwtResponse
+	(*AuthenticateKeyRequest)(nil),        // 0: pb.AuthenticateKeyRequest
+	(*AuthenticateKeyResponse)(nil),       // 1: pb.AuthenticateKeyResponse
+	(*AuthenticateJwtRequest)(nil),        // 2: pb.AuthenticateJwtRequest
+	(*AuthenticateJwtResponse)(nil),       // 3: pb.AuthenticateJwtResponse
+	(*CreateKeyRequest)(nil),              // 4: pb.CreateKeyRequest
+	(*CreateKeyResponse)(nil),             // 5: pb.CreateKeyResponse
+	(*CreateJwtRequest)(nil),              // 6: pb.CreateJwtRequest
+	(*CreateJwtResponse)(nil),             // 7: pb.CreateJwtResponse
+	(*CheckUserOrganizationRequest)(nil),  // 8: pb.CheckUserOrganizationRequest
+	(*CheckUserOrganizationResponse)(nil), // 9: pb.CheckUserOrganizationResponse
 }
 var file_protos_auth_proto_depIdxs = []int32{
 	0, // 0: pb.AuthService.AuthenticateKey:input_type -> pb.AuthenticateKeyRequest
 	2, // 1: pb.AuthService.AuthenticateJwt:input_type -> pb.AuthenticateJwtRequest
 	4, // 2: pb.AuthService.CreateKey:input_type -> pb.CreateKeyRequest
 	6, // 3: pb.AuthService.CreateJwt:input_type -> pb.CreateJwtRequest
-	1, // 4: pb.AuthService.AuthenticateKey:output_type -> pb.AuthenticateKeyResponse
-	3, // 5: pb.AuthService.AuthenticateJwt:output_type -> pb.AuthenticateJwtResponse
-	5, // 6: pb.AuthService.CreateKey:output_type -> pb.CreateKeyResponse
-	7, // 7: pb.AuthService.CreateJwt:output_type -> pb.CreateJwtResponse
-	4, // [4:8] is the sub-list for method output_type
-	0, // [0:4] is the sub-list for method input_type
+	8, // 4: pb.AuthService.CheckUserOrganization:input_type -> pb.CheckUserOrganizationRequest
+	1, // 5: pb.AuthService.AuthenticateKey:output_type -> pb.AuthenticateKeyResponse
+	3, // 6: pb.AuthService.AuthenticateJwt:output_type -> pb.AuthenticateJwtResponse
+	5, // 7: pb.AuthService.CreateKey:output_type -> pb.CreateKeyResponse
+	7, // 8: pb.AuthService.CreateJwt:output_type -> pb.CreateJwtResponse
+	9, // 9: pb.AuthService.CheckUserOrganization:output_type -> pb.CheckUserOrganizationResponse
+	5, // [5:10] is the sub-list for method output_type
+	0, // [0:5] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -577,7 +701,7 @@ func file_protos_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_protos_auth_proto_rawDesc), len(file_protos_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

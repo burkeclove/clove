@@ -150,6 +150,46 @@ func (a *AuthService) CreateJwt(ctx context.Context, req *pb.CreateJwtRequest) (
 	}, nil
 }
 
+
+func (a *AuthService) CheckUserOrganization(ctx context.Context, req *pb.CheckUserOrganizationRequest) (*pb.CheckUserOrganizationResponse, error) {
+	log.Printf("checking user organization for user id: %s and org id: %s: ", req.UserId, req.OrganizationId)
+	userId, err := helpers.UUIDFromString(req.UserId)
+	if err != nil {
+		errMsg := fmt.Sprintf("an error occured while getting uuid from user id %s", err.Error())
+		return &pb.CheckUserOrganizationResponse{
+			Success: false,
+			ErrorMessage: errMsg,
+		}, err
+	}
+	
+	orgId, err := helpers.UUIDFromString(req.OrganizationId)
+	if err != nil {
+		errMsg := fmt.Sprintf("an error occured while getting uuid from org id %s", err.Error())
+		return &pb.CheckUserOrganizationResponse{
+			Success: false,
+			ErrorMessage: errMsg,
+		}, err
+	}
+
+
+	ret, err := a.Q.CheckOrganizationUserExists(ctx, sqlc.CheckOrganizationUserExistsParams{
+		UserID: userId,
+		OrganizationID: orgId,
+	})
+
+	if err != nil {
+		errMsg := fmt.Sprintf("an error occured checking if user %s belongs to org id %s, err: %s", req.UserId, req.OrganizationId, err.Error())
+		return &pb.CheckUserOrganizationResponse{
+			Success: false,
+			ErrorMessage: errMsg,
+		}, err
+	}
+	return &pb.CheckUserOrganizationResponse{
+		Success: true,
+		Check: ret,
+	}, nil
+}
+
 func (a *AuthService) CreateKey(ctx context.Context, req *pb.CreateKeyRequest) (*pb.CreateKeyResponse, error) {
 	log.Println("creating api key for org: ", req.OrganizationId)
 	uuid, err := helpers.UUIDFromString(req.OrganizationId)

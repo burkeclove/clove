@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	CheckOrganizationUserExists(ctx context.Context, arg CheckOrganizationUserExistsParams) (bool, error)
 	CreateApiKey(ctx context.Context, arg CreateApiKeyParams) (ApiKey, error)
 	CreateOrganization(ctx context.Context, name string) (Organization, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)

@@ -9,6 +9,7 @@ service AuthService {
     rpc AuthenticateJwt(AuthenticateJwtRequest) returns (AuthenticateJwtResponse);
     rpc CreateKey(CreateKeyRequest) returns (CreateKeyResponse);
     rpc CreateJwt(CreateJwtRequest) returns (CreateJwtResponse);
+    rpc CheckUserOrganization(CheckUserOrganizationRequest) returns (CheckUserOrganizationResponse);
 }
 
 message AuthenticateKeyRequest {
@@ -55,4 +56,15 @@ message CreateJwtResponse {
   string expires_at = 2;
   bool success = 3;
   string error_message = 4;
+}
+
+message CheckUserOrganizationRequest {
+  string user_id = 1;
+  string organization_id = 2;
+}
+
+message CheckUserOrganizationResponse {
+  bool success = 1;
+  string error_message = 2;
+  bool check = 3;
 }
