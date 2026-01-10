@@ -63,8 +63,8 @@ func main() {
 	auth.POST("/login", auth_service.Login)
 	auth.Use(middleware.PortalMiddleware(q, auth_service.JwtService.Validate))
 	{
-		auth.GET("/", auth_service.GetApiKeys)
-		auth.POST("/", auth_service.CreateApiKey)
+		auth.GET("/:orgId", auth_service.GetApiKeys)
+		auth.POST("/:orgId", auth_service.CreateApiKey)
 	}
 
 	log.Printf("Starting HTTP server on :%d", httpPort)

@@ -6,6 +6,9 @@ RETURNING *;
 -- name: GetApiKeyByID :one
 SELECT * FROM api_keys WHERE id = $1;
 
+-- name: GetOrganizationApiKeys :one
+SELECT * FROM api_keys WHERE organization_id = $1;
+
 -- name: ListApiKeys :many
 SELECT * FROM api_keys ORDER BY created_at DESC LIMIT $1;
 

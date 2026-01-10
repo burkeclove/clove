@@ -45,21 +45,33 @@ func (q *Queries) GetOrganizationByID(ctx context.Context, id pgtype.UUID) (Orga
 	return i, err
 }
 
-const getOrganizationFromApiKey = `-- name: GetOrganizationFromApiKey :one
-SELECT organizations.id, organizations.name, organizations.created_at, organizations.updated_at FROM api_keys
-JOIN organizations ON organizations.id = api_keys.organization_id 
-WHERE api_keys.key_hash = $1
-LIMIT 1
+const getOrganizationsFromUserId = `-- name: GetOrganizationsFromUserId :many
+SELECT organizations.id, organizations.name, organizations.created_at, organizations.updated_at FROM organization_users
+JOIN organizations ON organizations.id = organization_users.organization_id 
+WHERE organization_users.user_id = $1
 `
 
-func (q *Queries) GetOrganizationFromApiKey(ctx context.Context, keyHash string) (Organization, error) {
-	row := q.db.QueryRow(ctx, getOrganizationFromApiKey, keyHash)
-	var i Organization
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+func (q *Queries) GetOrganizationsFromUserId(ctx context.Context, userID pgtype.UUID) ([]Organization, error) {
+	rows, err := q.db.Query(ctx, getOrganizationsFromUserId, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Organization
+	for rows.Next() {
+		var i Organization
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

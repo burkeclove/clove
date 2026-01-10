@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,13 @@ func PortalMiddleware(q *sqlc.Queries, validate func(ctx context.Context, token 
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second * 30) 
 		defer cancel()
+
+		jwt := strings.Split(got, " ")
+		if len(jwt) != 2 {
+			log.Println("auth header was empty")
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid Authorization header"})
+			return
+		}
 
 		claims, err := validate(ctx, got)
 		if err != nil {

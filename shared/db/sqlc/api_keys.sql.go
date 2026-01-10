@@ -72,6 +72,23 @@ func (q *Queries) GetOrgFromApiKey(ctx context.Context, keyHash string) (Organiz
 	return i, err
 }
 
+const getOrganizationApiKeys = `-- name: GetOrganizationApiKeys :one
+SELECT id, name, organization_id, key_hash, created_at FROM api_keys WHERE organization_id = $1
+`
+
+func (q *Queries) GetOrganizationApiKeys(ctx context.Context, organizationID pgtype.UUID) (ApiKey, error) {
+	row := q.db.QueryRow(ctx, getOrganizationApiKeys, organizationID)
+	var i ApiKey
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OrganizationID,
+		&i.KeyHash,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listApiKeys = `-- name: ListApiKeys :many
 SELECT id, name, organization_id, key_hash, created_at FROM api_keys ORDER BY created_at DESC LIMIT $1
 `

@@ -44,6 +44,7 @@ func main() {
 	auth.Use(middleware.PortalMiddleware(q, auth_grpc_client))
 	{
 		auth.GET("/:orgId", organization_service.GetOrganizationById)
+		auth.GET("/", organization_service.GetOrganizations)
 		auth.POST("/", organization_service.CreateOrganization)
 	}
 

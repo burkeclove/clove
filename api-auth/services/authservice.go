@@ -61,31 +61,87 @@ func NewAuthService(q *sqlc.Queries) *AuthService {
 
 func (a *AuthService) CreateApiKey(c *gin.Context) {
 	log.Println("got a request to create api key")
+	orgId := c.Param("orgId")
+	userId, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{})
+		return
+	}
+
 	var req requests.CreateApiKeyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	log.Printf("creating api key with name: %s and for org: %s", req.Name, req.OrgId)
-	uuid, err := helpers.UUIDFromString(req.OrgId)
+	// make sure user is a part of the org
+	orgUUID, userUUID, err := GetUserIdOrgId(orgId, userId.(string))
+	if err != nil {
+		log.Println("could not get uuid from org id or user id. err: ", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ret, err := a.Q.CheckOrganizationUserExists(c.Request.Context(), sqlc.CheckOrganizationUserExistsParams{
+		UserID: userUUID,
+		OrganizationID: orgUUID,
+	})
+	if !ret || err != nil {
+		log.Println("checked and user does not belong to org", err.Error())
+		c.JSON(http.StatusForbidden, gin.H{})
+		return
+	}
+
+	log.Printf("creating api key with name: %s and for org: %s", req.Name, orgId)
+	uuid, err := helpers.UUIDFromString(orgId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	key, keyHash, err := a.GenerateApiKey()
 	a.Q.CreateApiKey(context.Background(), sqlc.CreateApiKeyParams{
 		Name: req.Name,
 		OrganizationID: uuid,
+		KeyHash: keyHash,
 	})
+	c.JSON(http.StatusCreated, gin.H{"key": key})
 }
 
-func (a *AuthService) GenerateSig4Keys(c *gin.Context) {
-
-}
 
 func (a *AuthService) GetApiKeys(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{})
+	orgId := c.Param("orgId")
+	userId, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{})
+		return
+	}
+
+	// make sure user is a part of the org
+	orgUUID, userUUID, err := GetUserIdOrgId(orgId, userId.(string))
+	if err != nil {
+		log.Println("could not get uuid from org id or user id. err: ", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ret, err := a.Q.CheckOrganizationUserExists(c.Request.Context(), sqlc.CheckOrganizationUserExistsParams{
+		UserID: userUUID,
+		OrganizationID: orgUUID,
+	})
+	if !ret || err != nil {
+		log.Println("checked and user does not belong to org", err.Error())
+		c.JSON(http.StatusForbidden, gin.H{})
+		return
+	}
+	
+	keys, err := a.Q.GetOrganizationApiKeys(c.Request.Context(), orgUUID)
+	if err != nil {
+		log.Println("an error occured while getting org api key", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"keys": keys})
 }
 
 // GRPC
@@ -206,7 +262,7 @@ func (a *AuthService) CreateKey(ctx context.Context, req *pb.CreateKeyRequest) (
 		}, err
 	}
 
-	_, keyHash, err := a.GenerateApiKey()	
+	key, keyHash, err := a.GenerateApiKey()	
 	if err != nil {
 		log.Println("an error occured while creating api key: ", err.Error())
 		return &pb.CreateKeyResponse{
@@ -229,7 +285,7 @@ func (a *AuthService) CreateKey(ctx context.Context, req *pb.CreateKeyRequest) (
 	return &pb.CreateKeyResponse{
 		Success: true,
 		KeyId: dbKey.ID.String(),
-		Key: keyHash,
+		Key: key,
 	}, nil
 }
 

@@ -23,6 +23,13 @@ func NewOrganizationService(q *sqlc.Queries, auth_conn pb.AuthServiceClient) *Or
 }
 
 func (o *OrganizationService) CreateOrganization(c *gin.Context) {
+	userId, exists := c.Get("user_id")
+	if !exists {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	userUUID, err := helpers.UUIDFromString(userId.(string))
+
 	var req requests.CreateOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -40,6 +47,17 @@ func (o *OrganizationService) CreateOrganization(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// create the organization user
+	_, err = o.Q.CreateOrganizationUser(c.Request.Context(), sqlc.CreateOrganizationUserParams{
+		OrganizationID: org.ID,
+		UserID: userUUID,
+	})
+	if err != nil {
+		log.Println("could not create org user. error : ", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{})
+		return
+	} 
 
 	// create api key
 	log.Println("about to create api key... org id is: ", org.ID)
@@ -99,4 +117,27 @@ func (o *OrganizationService) GetOrganizationById(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"data": org})
+}
+
+func (o *OrganizationService) GetOrganizations(c *gin.Context) {
+	userId, exists := c.Get("user_id")
+	if !exists {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("user id: ", userId)
+	uuid, err := helpers.UUIDFromString(userId.(string))
+	if err != nil {
+		log.Println("an error occured while getting uuid from string", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
+	}
+
+	orgs, err := o.Q.GetOrganizationsFromUserId(c.Request.Context(), uuid)
+	if err != nil {
+		log.Println("an error occured while getting organizations from user id", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": orgs})
 }

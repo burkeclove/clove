@@ -30,6 +30,29 @@ func (q *Queries) CheckOrganizationUserExists(ctx context.Context, arg CheckOrga
 	return exists, err
 }
 
+const createOrganizationUser = `-- name: CreateOrganizationUser :one
+INSERT INTO organization_users (organization_id, user_id) 
+VALUES ($1, $2)
+RETURNING id, organization_id, user_id, created_at
+`
+
+type CreateOrganizationUserParams struct {
+	OrganizationID pgtype.UUID `json:"organization_id"`
+	UserID         pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) CreateOrganizationUser(ctx context.Context, arg CreateOrganizationUserParams) (OrganizationUser, error) {
+	row := q.db.QueryRow(ctx, createOrganizationUser, arg.OrganizationID, arg.UserID)
+	var i OrganizationUser
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.UserID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getOrganizationUser = `-- name: GetOrganizationUser :one
 SELECT id, organization_id, user_id, created_at FROM organization_users WHERE organization_id = $1 AND user_id = $2 LIMIT 1
 `
