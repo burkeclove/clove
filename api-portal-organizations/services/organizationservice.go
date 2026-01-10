@@ -29,6 +29,9 @@ func (o *OrganizationService) CreateOrganization(c *gin.Context) {
 		return
 	}
 
+	// make sure organization doesn't exist with that nameo
+	// later lol
+
 	log.Println("creating org with name: ", req.Name)
 	//uuid := pgtype.UUID{Bytes: id, Valid: true}
 	org, err := o.Q.CreateOrganization(context.Background(), req.Name) 
@@ -46,6 +49,15 @@ func (o *OrganizationService) CreateOrganization(c *gin.Context) {
 
 	log.Println("request has been formed")
 	res, err := o.AuthClient.CreateKey(c.Request.Context(), &createKeyReq)
+	if err != nil {
+		log.Println("an error occured while creating api key during org creation: ", err.Error())
+		createOrgResponse := responses.CreateOrganizationResponse{
+			Name: org.Name,
+			Id: org.ID.String(),
+		}
+		c.JSON(http.StatusCreated, createOrgResponse)
+		return
+	}
 
 	id := res.KeyId
 	key := res.Key

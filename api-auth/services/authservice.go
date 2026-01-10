@@ -2,22 +2,26 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	//"github.com/google/uuid"
-	"net/http"
 	//"github.com/jackc/pgx/v5/pgtype"
+	"github.com/burkeclove/auth-api/functions/passwords"
 	"github.com/burkeclove/auth-api/internal"
 	"github.com/burkeclove/auth-api/models/requests"
 	"github.com/burkeclove/shared/db/helpers"
 	"github.com/burkeclove/shared/db/sqlc"
-	"github.com/burkeclove/auth-api/functions/passwords"
 
 	pb "github.com/burkeclove/shared/gen/go/protos"
 )
@@ -87,8 +91,9 @@ func (a *AuthService) GetApiKeys(c *gin.Context) {
 // GRPC
 func (a *AuthService) AuthenticateKey(ctx context.Context, req *pb.AuthenticateKeyRequest) (*pb.AuthenticateKeyResponse, error) {
 	key := req.Key			
+	hash := a.HashApiKey(key)
 	
-	getOrgRet, err := a.Q.GetOrgFromApiKey(ctx, key)
+	getOrgRet, err := a.Q.GetOrgFromApiKey(ctx, hash)
 	if err != nil {
 		return &pb.AuthenticateKeyResponse{
 			Success:  false,
@@ -241,32 +246,68 @@ func (a *AuthService) Login(c *gin.Context) {
 		return
 	}
 
-	// hash password
-	password_hash, err := passwords.HashPassword(req.Password, passwords.DefaultParams)
+	// get user by email
+	user, err := a.Q.GetUserByEmail(c.Request.Context(), req.Email)
 	if err != nil {
-		log.Println("an error occured while hashing password: ", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	
-	// get user
-	user, err := a.Q.GetUserByEmailPassword(c.Request.Context(), sqlc.GetUserByEmailPasswordParams{
-		Email: req.Email,
-		PasswordHash: password_hash,
-	})		
-	if err != nil {
-		log.Println("an error occured while getting user by email password: ", err.Error())
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		log.Println("an error occured while getting user by email: ", err.Error())
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
-	key, _, err := a.JwtService.Mint(c.Request.Context(), user.ID.String(), user.Email)
+	// verify password
+	valid, err := passwords.VerifyPassword(req.Password, user.PasswordHash)
 	if err != nil {
-		errMsg := fmt.Sprintf("An error occured while creating a jwt: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})	
+		log.Println("an error occured while verifying password: ", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Password verification failed"})
+		return
+	}
+
+	if !valid {
+		log.Println("invalid password for user: ", req.Email)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
 	// generate jwt
-	c.JSON(http.StatusUnauthorized, gin.H{"user": user, "jwt": key})
+	key, _, err := a.JwtService.Mint(c.Request.Context(), user.ID.String(), user.Email)
+	if err != nil {
+		errMsg := fmt.Sprintf("An error occured while creating a jwt: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"user": user, "jwt": key})
 }
+
+// generateRandomKey generates a cryptographically secure random key
+func generateRandomKey(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+// GenerateApiKey generates a new API key with cl_ prefix and returns the key and its hash
+func (a *AuthService) GenerateApiKey() (string, string, error) {
+	randomKey, err := generateRandomKey(32)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Add cl_ prefix
+	key := "cl_" + randomKey
+
+	// Hash the key for storage
+	keyHash := a.HashApiKey(key)	
+
+	return key, keyHash, nil
+}
+
+func (a *AuthService) HashApiKey(key string) string {
+	hash := sha256.Sum256([]byte(key))
+	keyHash := hex.EncodeToString(hash[:])
+	return keyHash
+}
+
+
