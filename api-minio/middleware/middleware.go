@@ -12,10 +12,10 @@ import (
 func SigV4Middleware(q *sqlc.Queries, auth_conn pb.AuthServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		
+
 		// authenticate
 		authReq :=  &pb.AuthenticateSigV4Request{
-			AuthorizationHeader: authHeader,		
+			AuthorizationHeader: authHeader,
 		}
 		authRes, err := auth_conn.AuthenticateSigV4(c.Request.Context(), authReq)
 		if err != nil {
@@ -24,7 +24,15 @@ func SigV4Middleware(q *sqlc.Queries, auth_conn pb.AuthServiceClient) gin.Handle
 			return
 		}
 
+		if !authRes.Success {
+			log.Println("sigv4 authentication failed: ", authRes.ErrorMessage)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": authRes.ErrorMessage})
+			return
+		}
+
+		// Set org_id and policy in context for endpoint authorization
 		c.Set("org_id", authRes.OrgId)
+		c.Set("policy", authRes.Policy)
 		c.Next()
 	}
 }

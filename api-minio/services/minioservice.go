@@ -1,11 +1,12 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 
 	pb "github.com/burkeclove/shared/gen/go/protos"
 	"github.com/gin-gonic/gin"
@@ -19,13 +20,13 @@ type MinioClient struct {
 }
 
 func NewMinioClient(auth_conn pb.AuthServiceClient) *MinioClient {
-	endpoint := "localhost:9000"
-	accessKeyID := "minioadmin"
-	secretAccessKey := "minioadmin"
-	useSSL := false
+	endpoint := getEnv("MINIO_ENDPOINT", "localhost:9000")
+	accessKeyID := getEnv("MINIO_ACCESS_KEY", "minioadmin")
+	secretAccessKey := getEnv("MINIO_SECRET_KEY", "minioadmin")
+	useSSL := getEnv("MINIO_USE_SSL", "false") == "true"
 
 	// Initialize minio client object.
- 	minioClient, err := minio.New(endpoint, &minio.Options{
+	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
 		Secure: useSSL,
 	})
@@ -34,6 +35,13 @@ func NewMinioClient(auth_conn pb.AuthServiceClient) *MinioClient {
 		return nil
 	}
 	return &MinioClient{Client: minioClient, AuthClient: auth_conn}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
 
 func (m *MinioClient) CreateBucketWithCheck(bucketName string) {
@@ -78,6 +86,164 @@ func (m *MinioClient) PutBytes(data []byte, name string) error {
 	return nil
 }
 
-func (m *MinioClient) CreateSigV4Credentials(organizationId string) {
-	
+// ListBuckets lists all buckets (requires s3:ListAllMyBuckets permission)
+func (m *MinioClient) ListBuckets(c *gin.Context) {
+	orgId, _ := c.Get("org_id")
+	log.Printf("Listing buckets for org: %s", orgId)
+
+	buckets, err := m.Client.ListBuckets(c.Request.Context())
+	if err != nil {
+		log.Printf("Error listing buckets: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list buckets"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"buckets": buckets})
+}
+
+// ListObjects lists objects in a bucket (requires s3:ListBucket permission)
+func (m *MinioClient) ListObjects(c *gin.Context) {
+	bucketName := c.Param("bucket")
+	prefix := c.Query("prefix")
+	orgId, _ := c.Get("org_id")
+	log.Printf("Listing objects in bucket %s for org: %s", bucketName, orgId)
+
+	objectCh := m.Client.ListObjects(c.Request.Context(), bucketName, minio.ListObjectsOptions{
+		Prefix:    prefix,
+		Recursive: true,
+	})
+
+	objects := []minio.ObjectInfo{}
+	for object := range objectCh {
+		if object.Err != nil {
+			log.Printf("Error listing objects: %v", object.Err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list objects"})
+			return
+		}
+		objects = append(objects, object)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"objects": objects})
+}
+
+// GetObject downloads an object (requires s3:GetObject permission)
+func (m *MinioClient) GetObject(c *gin.Context) {
+	bucketName := c.Param("bucket")
+	objectName := c.Param("object")
+	orgId, _ := c.Get("org_id")
+	log.Printf("Getting object %s/%s for org: %s", bucketName, objectName, orgId)
+
+	object, err := m.Client.GetObject(c.Request.Context(), bucketName, objectName, minio.GetObjectOptions{})
+	if err != nil {
+		log.Printf("Error getting object: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get object"})
+		return
+	}
+	defer object.Close()
+
+	stat, err := object.Stat()
+	if err != nil {
+		log.Printf("Error getting object stat: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get object"})
+		return
+	}
+
+	c.Header("Content-Type", stat.ContentType)
+	c.Header("Content-Length", fmt.Sprintf("%d", stat.Size))
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", objectName))
+
+	if _, err := io.Copy(c.Writer, object); err != nil {
+		log.Printf("Error streaming object: %v", err)
+		return
+	}
+}
+
+// PutObject uploads an object (requires s3:PutObject permission)
+func (m *MinioClient) PutObject(c *gin.Context) {
+	bucketName := c.Param("bucket")
+	objectName := c.Param("object")
+	orgId, _ := c.Get("org_id")
+	log.Printf("Putting object %s/%s for org: %s", bucketName, objectName, orgId)
+
+	contentType := c.GetHeader("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	info, err := m.Client.PutObject(
+		c.Request.Context(),
+		bucketName,
+		objectName,
+		c.Request.Body,
+		c.Request.ContentLength,
+		minio.PutObjectOptions{
+			ContentType: contentType,
+		},
+	)
+	if err != nil {
+		log.Printf("Error putting object: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload object"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"bucket": info.Bucket,
+		"key":    info.Key,
+		"etag":   info.ETag,
+		"size":   info.Size,
+	})
+}
+
+// DeleteObject deletes an object (requires s3:DeleteObject permission)
+func (m *MinioClient) DeleteObject(c *gin.Context) {
+	bucketName := c.Param("bucket")
+	objectName := c.Param("object")
+	orgId, _ := c.Get("org_id")
+	log.Printf("Deleting object %s/%s for org: %s", bucketName, objectName, orgId)
+
+	err := m.Client.RemoveObject(c.Request.Context(), bucketName, objectName, minio.RemoveObjectOptions{})
+	if err != nil {
+		log.Printf("Error deleting object: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete object"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Object deleted successfully"})
+}
+
+// CreateBucket creates a new bucket (requires s3:CreateBucket permission)
+func (m *MinioClient) CreateBucketHandler(c *gin.Context) {
+	bucketName := c.Param("bucket")
+	orgId, _ := c.Get("org_id")
+	log.Printf("Creating bucket %s for org: %s", bucketName, orgId)
+
+	err := m.Client.MakeBucket(c.Request.Context(), bucketName, minio.MakeBucketOptions{
+		Region: "us-east-1",
+	})
+	if err != nil {
+		log.Printf("Error creating bucket: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create bucket"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"bucket":  bucketName,
+		"message": "Bucket created successfully",
+	})
+}
+
+// DeleteBucket deletes a bucket (requires s3:DeleteBucket permission)
+func (m *MinioClient) DeleteBucket(c *gin.Context) {
+	bucketName := c.Param("bucket")
+	orgId, _ := c.Get("org_id")
+	log.Printf("Deleting bucket %s for org: %s", bucketName, orgId)
+
+	err := m.Client.RemoveBucket(c.Request.Context(), bucketName)
+	if err != nil {
+		log.Printf("Error deleting bucket: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete bucket"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Bucket deleted successfully"})
 }
