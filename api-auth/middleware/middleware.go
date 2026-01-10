@@ -34,7 +34,7 @@ func PortalMiddleware(q *sqlc.Queries, validate func(ctx context.Context, token 
 			return
 		}
 
-		claims, err := validate(ctx, got)
+		claims, err := validate(ctx, jwt[1])
 		if err != nil {
 			log.Println("could not get jwt from auth header: ", err.Error())
 
