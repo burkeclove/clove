@@ -36,7 +36,7 @@ func ApiKeyMiddleware(q *sqlc.Queries, auth_conn pb.AuthServiceClient) gin.Handl
 			return
 		}
 
-		c.Set("apiKey", got)
+		c.Set("api_key", got)
 		c.Next()
 	}
 }

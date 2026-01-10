@@ -188,3 +188,17 @@ func readPEMFile(path string) (string, error) {
 	}
 	return string(b), nil
 }
+
+// signToken signs a JWT token with the service's private key
+func (s *JwtService) signToken(token *jwt.Token) (string, error) {
+	signed, err := token.SignedString(s.privateKey)
+	if err != nil {
+		return "", fmt.Errorf("sign token: %w", err)
+	}
+	return signed, nil
+}
+
+// GetPublicKey returns the RSA public key for external validation
+func (s *JwtService) GetPublicKey() *rsa.PublicKey {
+	return s.publicKey
+}

@@ -20,11 +20,19 @@ import (
 	"github.com/burkeclove/auth-api/functions/passwords"
 	"github.com/burkeclove/auth-api/internal"
 	"github.com/burkeclove/auth-api/models/requests"
+	"github.com/burkeclove/auth-api/models/responses"
 	"github.com/burkeclove/shared/db/helpers"
 	"github.com/burkeclove/shared/db/sqlc"
 
+	"github.com/golang-jwt/jwt/v5"
 	pb "github.com/burkeclove/shared/gen/go/protos"
 )
+
+type SigV4Claims struct {
+	jwt.RegisteredClaims
+	OrgID  string `json:"org_id"`
+	Policy string `json:"policy"`
+}
 
 type AuthService struct {
 	Q *sqlc.Queries
@@ -376,4 +384,127 @@ func (a *AuthService) HashApiKey(key string) string {
 	return keyHash
 }
 
+// GenerateSigV4Credentials generates stateless SigV4 credentials with embedded policy
+func (a *AuthService) GenerateSigV4Credentials(req *requests.CreateSigV4Request) (*responses.CreateSigV4Response, error) {
+	// Generate access key (AWS format: 20 characters)
+	accessKeyBytes, err := generateRandomKey(15)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access key: %w", err)
+	}
+	accessKey := "AKIA" + accessKeyBytes[:16] // AWS access keys start with AKIA
 
+	// Generate secret key (AWS format: 40 characters)
+	secretKeyBytes, err := generateRandomKey(30)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate secret key: %w", err)
+	}
+	secretKey := secretKeyBytes[:40]
+
+	// Build IAM policy from request
+	policy, err := internal.BuildIAMPolicy(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build IAM policy: %w", err)
+	}
+
+	policyJSON, err := internal.PolicyToJSON(policy)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert policy to JSON: %w", err)
+	}
+
+	// Generate session token (JWT with embedded policy)
+	expiresAt := time.Now().Add(12 * time.Hour)
+	claims := SigV4Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "clove-auth",
+			Subject:   req.OrgID,
+		},
+		OrgID:  req.OrgID,
+		Policy: policyJSON,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	sessionToken, err := a.JwtService.signToken(token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign session token: %w", err)
+	}
+
+	return &responses.CreateSigV4Response{
+		AccessKey:    accessKey,
+		SecretKey:    secretKey,
+		SessionToken: sessionToken,
+		ExpiresAt:    expiresAt.Format(time.RFC3339),
+	}, nil
+}
+
+// ValidateSigV4SessionToken validates a session token and returns the embedded policy
+func (a *AuthService) ValidateSigV4SessionToken(sessionToken string) (*SigV4Claims, error) {
+	parser := jwt.NewParser(
+		jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()}),
+		jwt.WithIssuer("clove-auth"),
+	)
+
+	claims := &SigV4Claims{}
+	_, err := parser.ParseWithClaims(sessionToken, claims, func(t *jwt.Token) (any, error) {
+		return a.JwtService.GetPublicKey(), nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("invalid session token: %w", err)
+	}
+
+	if claims.OrgID == "" || claims.Policy == "" {
+		return nil, errors.New("missing required claims in session token")
+	}
+
+	return claims, nil
+}
+
+// CreateSigV4Credentials is a Gin handler for generating SigV4 credentials
+func (a *AuthService) CreateSigV4Credentials(c *gin.Context) {
+	var req requests.CreateSigV4Request
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate org_id is provided
+	if req.OrgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "org_id is required"})
+		return
+	}
+
+	// Optional: Get user from context for authorization
+	// This assumes you have middleware that sets user_id
+	userId, exists := c.Get("user_id")
+	if exists {
+		// Verify user belongs to the organization
+		orgUUID, userUUID, err := GetUserIdOrgId(req.OrgID, userId.(string))
+		if err != nil {
+			log.Println("could not get uuid from org id or user id. err:", err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid org_id or user_id"})
+			return
+		}
+
+		ret, err := a.Q.CheckOrganizationUserExists(c.Request.Context(), sqlc.CheckOrganizationUserExistsParams{
+			UserID:         userUUID,
+			OrganizationID: orgUUID,
+		})
+		if !ret || err != nil {
+			log.Println("user does not belong to org:", err)
+			c.JSON(http.StatusForbidden, gin.H{"error": "User does not belong to organization"})
+			return
+		}
+	}
+
+	// Generate credentials
+	creds, err := a.GenerateSigV4Credentials(&req)
+	if err != nil {
+		log.Println("an error occurred while generating SigV4 credentials:", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate credentials"})
+		return
+	}
+
+	log.Printf("Successfully generated SigV4 credentials for org: %s", req.OrgID)
+	c.JSON(http.StatusOK, creds)
+}

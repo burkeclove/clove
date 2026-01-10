@@ -38,15 +38,14 @@ func main() {
 	auth_grpc_client := pb.NewAuthServiceClient(auth_conn) 	
 
 	// now create connection and service for minio
-	minio_client := services.NewMinioClient()
+	minio_client := services.NewMinioClient(auth_grpc_client)
 	
 	// create auth middleware
 	r := gin.Default()
-	auth := r.Group("/api/organizations")	
+	auth := r.Group("/api/bucket")	
 	auth.Use(middleware.ApiKeyMiddleware(q, auth_grpc_client))
 	{
-		auth.GET("/", organization_service.GetOrganizationById)
-		auth.POST("/", organization_service.CreateOrganization)
+		auth.GET("/", minio_client.CreateSigV4CredentialsGin)
 	}
 
 	log.Println("About to serve on :8080")

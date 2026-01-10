@@ -5,16 +5,20 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
+
+	pb "github.com/burkeclove/shared/gen/go/protos"
+	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/gin-gonic/gin"
 )
 
 type MinioClient struct {
 	Client *minio.Client	
+	AuthClient pb.AuthServiceClient
 }
 
-func NewMinioClient() *MinioClient {
+func NewMinioClient(auth_conn pb.AuthServiceClient) *MinioClient {
 	endpoint := "localhost:9000"
 	accessKeyID := "minioadmin"
 	secretAccessKey := "minioadmin"
@@ -29,7 +33,7 @@ func NewMinioClient() *MinioClient {
 		log.Fatalln(err)
 		return nil
 	}
-	return &MinioClient{Client: minioClient}
+	return &MinioClient{Client: minioClient, AuthClient: auth_conn}
 }
 
 func (m *MinioClient) CreateBucketWithCheck(bucketName string) {
@@ -72,10 +76,6 @@ func (m *MinioClient) PutBytes(data []byte, name string) error {
 		return err
 	}
 	return nil
-}
-
-func (m *MinioClient) CreateSigV4CredentialsGin(c *gin.Context) {
-	
 }
 
 func (m *MinioClient) CreateSigV4Credentials(organizationId string) {

@@ -65,6 +65,7 @@ func main() {
 	{
 		auth.GET("/:orgId", auth_service.GetApiKeys)
 		auth.POST("/:orgId", auth_service.CreateApiKey)
+		auth.POST("/sigv4/credentials", auth_service.CreateSigV4Credentials)
 	}
 
 	log.Printf("Starting HTTP server on :%d", httpPort)

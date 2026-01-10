@@ -13,13 +13,17 @@ import (
 type Querier interface {
 	CheckOrganizationUserExists(ctx context.Context, arg CheckOrganizationUserExistsParams) (bool, error)
 	CreateApiKey(ctx context.Context, arg CreateApiKeyParams) (ApiKey, error)
+	CreateMinioCredential(ctx context.Context, arg CreateMinioCredentialParams) (MinioCredential, error)
 	CreateOrganization(ctx context.Context, name string) (Organization, error)
 	CreateOrganizationUser(ctx context.Context, arg CreateOrganizationUserParams) (OrganizationUser, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteMinioCredential(ctx context.Context, id pgtype.UUID) error
 	GetApiKeyByID(ctx context.Context, id pgtype.UUID) (ApiKey, error)
+	GetMinioCredentialByAccessKey(ctx context.Context, accessKey string) (MinioCredential, error)
 	GetOrgFromApiKey(ctx context.Context, keyHash string) (Organization, error)
 	GetOrganizationApiKeys(ctx context.Context, organizationID pgtype.UUID) (ApiKey, error)
 	GetOrganizationByID(ctx context.Context, id pgtype.UUID) (Organization, error)
+	GetOrganizationMinioCredentials(ctx context.Context, organizationID pgtype.UUID) ([]MinioCredential, error)
 	GetOrganizationUser(ctx context.Context, arg GetOrganizationUserParams) (OrganizationUser, error)
 	GetOrganizationsFromUserId(ctx context.Context, userID pgtype.UUID) ([]Organization, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)

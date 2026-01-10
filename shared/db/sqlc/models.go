@@ -16,6 +16,17 @@ type ApiKey struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
+type MinioCredential struct {
+	ID             pgtype.UUID        `json:"id"`
+	OrganizationID pgtype.UUID        `json:"organization_id"`
+	Name           string             `json:"name"`
+	AccessKey      string             `json:"access_key"`
+	SecretKeyHash  string             `json:"secret_key_hash"`
+	Policy         []byte             `json:"policy"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Organization struct {
 	ID        pgtype.UUID        `json:"id"`
 	Name      string             `json:"name"`
