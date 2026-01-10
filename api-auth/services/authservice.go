@@ -206,9 +206,19 @@ func (a *AuthService) CreateKey(ctx context.Context, req *pb.CreateKeyRequest) (
 		}, err
 	}
 
-	_, err = a.Q.CreateApiKey(context.Background(), sqlc.CreateApiKeyParams{
+	_, keyHash, err := a.GenerateApiKey()	
+	if err != nil {
+		log.Println("an error occured while creating api key: ", err.Error())
+		return &pb.CreateKeyResponse{
+			Success: false,
+			ErrorMessage: err.Error(),
+		}, err
+	}
+
+	dbKey, err := a.Q.CreateApiKey(context.Background(), sqlc.CreateApiKeyParams{
 		Name: "First Key",
 		OrganizationID: uuid,
+		KeyHash: keyHash,
 	})
 	if err != nil {
 		return &pb.CreateKeyResponse{
@@ -218,8 +228,8 @@ func (a *AuthService) CreateKey(ctx context.Context, req *pb.CreateKeyRequest) (
 	}
 	return &pb.CreateKeyResponse{
 		Success: true,
-		KeyId: "",
-		Key: "",
+		KeyId: dbKey.ID.String(),
+		Key: keyHash,
 	}, nil
 }
 

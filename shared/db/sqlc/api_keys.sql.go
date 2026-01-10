@@ -12,18 +12,19 @@ import (
 )
 
 const createApiKey = `-- name: CreateApiKey :one
-INSERT INTO api_keys (name, organization_id)
-VALUES ($1, $2)
+INSERT INTO api_keys (name, organization_id, key_hash)
+VALUES ($1, $2, $3)
 RETURNING id, name, organization_id, key_hash, created_at
 `
 
 type CreateApiKeyParams struct {
 	Name           string      `json:"name"`
 	OrganizationID pgtype.UUID `json:"organization_id"`
+	KeyHash        string      `json:"key_hash"`
 }
 
 func (q *Queries) CreateApiKey(ctx context.Context, arg CreateApiKeyParams) (ApiKey, error) {
-	row := q.db.QueryRow(ctx, createApiKey, arg.Name, arg.OrganizationID)
+	row := q.db.QueryRow(ctx, createApiKey, arg.Name, arg.OrganizationID, arg.KeyHash)
 	var i ApiKey
 	err := row.Scan(
 		&i.ID,
