@@ -386,31 +386,35 @@ func (a *AuthService) HashApiKey(key string) string {
 
 // GenerateSigV4Credentials generates stateless SigV4 credentials with embedded policy
 func (a *AuthService) GenerateSigV4Credentials(req *requests.CreateSigV4Request) (*responses.CreateSigV4Response, error) {
+	log.Println("about to generate sigv4 creds...")
 	accessKeyBytes, err := generateRandomKey(15)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access key: %w", err)
 	}
-	accessKey := "AKIA" + accessKeyBytes[:16] // AWS access keys start with AKIA
+	accessKey := "AKIA" + accessKeyBytes[:16] 
 
-	// Generate secret key (AWS format: 40 characters)
+	log.Println("about to generate sigv4 creds...")
 	secretKeyBytes, err := generateRandomKey(30)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate secret key: %w", err)
 	}
 	secretKey := secretKeyBytes[:40]
 
+	log.Println("about to build iam policy")
 	// Build IAM policy from request
 	policy, err := internal.BuildIAMPolicy(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build IAM policy: %w", err)
 	}
 
+	log.Println("converting policy to json...")
 	policyJSON, err := internal.PolicyToJSON(policy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert policy to JSON: %w", err)
 	}
 
 	// Generate session token (JWT with embedded policy)
+	log.Println("building claims...")
 	expiresAt := time.Now().Add(12 * time.Hour)
 	claims := SigV4Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -423,6 +427,7 @@ func (a *AuthService) GenerateSigV4Credentials(req *requests.CreateSigV4Request)
 		Policy: policyJSON,
 	}
 
+	log.Println("building token...")
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	sessionToken, err := a.JwtService.signToken(token)
 	if err != nil {
