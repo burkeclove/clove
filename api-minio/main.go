@@ -40,7 +40,7 @@ func main() {
 	auth_grpc_client := pb.NewAuthServiceClient(auth_conn)
 
 	// Create MinIO client
-	minio_client := services.NewMinioClient(auth_grpc_client)
+	minio_client := services.NewMinioClient(auth_grpc_client, q)
 
 	r := gin.Default()
 	api := r.Group("/api")

@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/burkeclove/shared/db/helpers"
+	"github.com/burkeclove/shared/db/sqlc"
 	pb "github.com/burkeclove/shared/gen/go/protos"
 	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
@@ -18,9 +20,10 @@ import (
 type MinioClient struct {
 	Client *minio.Client	
 	AuthClient pb.AuthServiceClient
+	Q *sqlc.Queries
 }
 
-func NewMinioClient(auth_conn pb.AuthServiceClient) *MinioClient {
+func NewMinioClient(auth_conn pb.AuthServiceClient, q *sqlc.Queries) *MinioClient {
 	endpoint := getEnv("MINIO_ENDPOINT", "localhost:9000")
 	accessKeyID := getEnv("MINIO_ACCESS_KEY", "minioadmin")
 	secretAccessKey := getEnv("MINIO_SECRET_KEY", "minioadmin")
@@ -35,7 +38,7 @@ func NewMinioClient(auth_conn pb.AuthServiceClient) *MinioClient {
 		log.Fatalln(err)
 		return nil
 	}
-	return &MinioClient{Client: minioClient, AuthClient: auth_conn}
+	return &MinioClient{Client: minioClient, AuthClient: auth_conn, Q: q}
 }
 
 func getEnv(key, defaultValue string) string {
@@ -214,11 +217,23 @@ func (m *MinioClient) DeleteObject(c *gin.Context) {
 
 // CreateBucket creates a new bucket (requires s3:CreateBucket permission)
 func (m *MinioClient) CreateBucketHandler(c *gin.Context) {
-	bucketName := c.Param("bucket")
+	reqBucketName := c.Param("bucket")
 	orgId, _ := c.Get("org_id")
-	log.Printf("Creating bucket %s for org: %s", bucketName, orgId)
+	log.Printf("Creating bucket %s for org: %s", reqBucketName, orgId)
 
-	err := m.Client.MakeBucket(c.Request.Context(), bucketName, minio.MakeBucketOptions{
+	// create bucket in db first
+	orgUUID, err := helpers.UUIDFromString(orgId.(string))
+	if err != nil {
+		log.Println("an error occured while getting uuid from string for org id: ", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "an error occured while getting uuid from string for org id"})
+	}
+	res, err := m.Q.CreateS3Bucket(c.Request.Context(), sqlc.CreateS3BucketParams{
+		Name: reqBucketName,
+		OrganizationID: orgUUID,
+	})
+	bucketName := m.GetBucketName(orgId.(string), res.ID.String(), reqBucketName)
+
+	err = m.Client.MakeBucket(c.Request.Context(), reqBucketName, minio.MakeBucketOptions{
 		Region: "us-east-1",
 	})
 	if err != nil {
@@ -235,11 +250,18 @@ func (m *MinioClient) CreateBucketHandler(c *gin.Context) {
 
 // DeleteBucket deletes a bucket (requires s3:DeleteBucket permission)
 func (m *MinioClient) DeleteBucket(c *gin.Context) {
-	bucketName := c.Param("bucket")
+	reqBucketName := c.Param("bucket")
 	orgId, _ := c.Get("org_id")
-	log.Printf("Deleting bucket %s for org: %s", bucketName, orgId)
+	log.Printf("Deleting bucket %s for org: %s", reqBucketName, orgId)
 
-	err := m.Client.RemoveBucket(c.Request.Context(), bucketName)
+	orgUUID, err := helpers.UUIDFromString(orgId.(string))
+	bucket, err := m.Q.DeleteS3BucketByName(c.Request.Context(), sqlc.DeleteS3BucketByNameParams{
+		Name: reqBucketName,
+		OrganizationID: orgUUID,
+	})
+	bucketName := m.GetBucketName(orgId.(string), bucket.ID.String(), reqBucketName)
+
+	err = m.Client.RemoveBucket(c.Request.Context(), bucketName)
 	if err != nil {
 		log.Printf("Error deleting bucket: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete bucket"})
@@ -247,4 +269,8 @@ func (m *MinioClient) DeleteBucket(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Bucket deleted successfully"})
+}
+
+func (m *MinioClient) GetBucketName(orgId, bucketId, bucketName string) string {
+	return fmt.Sprintf("%s-%s-%s", orgId, bucketId, bucketName)
 }
