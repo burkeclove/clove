@@ -73,6 +73,49 @@ services:
       - clove-network
     restart: unless-stopped
 
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clove-network
+    restart: unless-stopped
+
+  api-minio:
+    build:
+      context: .
+      dockerfile: ./api-minio/Dockerfile
+    container_name: api-minio
+    environment:
+      - DATABASE_URL=postgres://cloveuser:clovepassword@postgres:5432/clovedb?sslmode=disable
+      - AUTH_CONNECTION=api-auth:50051
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_USE_SSL=false
+    ports:
+      - "8084:8080"
+    depends_on:
+      - postgres
+      - api-auth
+      - minio
+    networks:
+      - clove-network
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     container_name: nginx
@@ -84,6 +127,7 @@ services:
       - api-auth
       - api-portal-users
       - api-portal-organizations
+      - api-minio
     networks:
       - clove-network
     restart: unless-stopped
@@ -94,3 +138,4 @@ networks:
 
 volumes:
   postgres_data:
+  minio_data:
