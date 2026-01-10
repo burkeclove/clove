@@ -29,3 +29,24 @@ func (q *Queries) CheckOrganizationUserExists(ctx context.Context, arg CheckOrga
 	err := row.Scan(&exists)
 	return exists, err
 }
+
+const getOrganizationUser = `-- name: GetOrganizationUser :one
+SELECT id, organization_id, user_id, created_at FROM organization_users WHERE organization_id = $1 AND user_id = $2 LIMIT 1
+`
+
+type GetOrganizationUserParams struct {
+	OrganizationID pgtype.UUID `json:"organization_id"`
+	UserID         pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetOrganizationUser(ctx context.Context, arg GetOrganizationUserParams) (OrganizationUser, error) {
+	row := q.db.QueryRow(ctx, getOrganizationUser, arg.OrganizationID, arg.UserID)
+	var i OrganizationUser
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.UserID,
+		&i.CreatedAt,
+	)
+	return i, err
+}

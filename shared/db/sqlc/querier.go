@@ -19,6 +19,7 @@ type Querier interface {
 	GetOrgFromApiKey(ctx context.Context, keyHash string) (Organization, error)
 	GetOrganizationByID(ctx context.Context, id pgtype.UUID) (Organization, error)
 	GetOrganizationFromApiKey(ctx context.Context, keyHash string) (Organization, error)
+	GetOrganizationUser(ctx context.Context, arg GetOrganizationUserParams) (OrganizationUser, error)
 	GetUserById(ctx context.Context, id pgtype.UUID) (User, error)
 	ListApiKeys(ctx context.Context, limit int32) ([]ApiKey, error)
 }

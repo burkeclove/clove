@@ -4,11 +4,13 @@ import (
 	"context"
 	"log"
 	"net/http"
-	pb "github.com/burkeclove/shared/gen/go/protos"
+
 	"github.com/burkeclove/organizations-api/models/requests"
 	"github.com/burkeclove/organizations-api/models/responses"
-	"github.com/gin-gonic/gin"
+	"github.com/burkeclove/shared/db/helpers"
 	"github.com/burkeclove/shared/db/sqlc"
+	pb "github.com/burkeclove/shared/gen/go/protos"
+	"github.com/gin-gonic/gin"
 )
 
 type OrganizationService struct {
@@ -60,17 +62,28 @@ func (o *OrganizationService) CreateOrganization(c *gin.Context) {
 }
 
 func (o *OrganizationService) GetOrganizationById(c *gin.Context) {
-	apiKey, exists := c.Get("apiKey")
+	userId, exists := c.Get("user_id")
+	orgId := c.Param("orgId")
 	if !exists {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-	key := apiKey.(string)
+	// 
+	req := &pb.CheckUserOrganizationRequest{
+		UserId: userId.(string),
+		OrganizationId: orgId,
+	}
+	authRes, err := o.AuthClient.CheckUserOrganization(c.Request.Context(), req)
+	if err != nil || authRes.Success {
+		log.Println("an error occured while getting user organization: ", err.Error())
+		c.JSON(http.StatusForbidden, gin.H{"error":err.Error()})
+	}
 
-	org, err := o.Q.GetOrganizationFromApiKey(c.Request.Context(), key)
+	uuid, err := helpers.UUIDFromString(req.OrganizationId)
+	org, err := o.Q.GetOrganizationByID(c.Request.Context(), uuid)
 	if err != nil {
-		log.Println("an error occured while getting organization from api key")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Println("an error occured while getting uuid from string", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"data": org})

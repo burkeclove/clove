@@ -43,7 +43,7 @@ func main() {
 	auth := r.Group("/api/organizations")	
 	auth.Use(middleware.PortalMiddleware(q, auth_grpc_client))
 	{
-		auth.GET("/", organization_service.GetOrganizationById)
+		auth.GET("/:orgId", organization_service.GetOrganizationById)
 		auth.POST("/", organization_service.CreateOrganization)
 	}
 
