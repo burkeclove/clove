@@ -386,7 +386,6 @@ func (a *AuthService) HashApiKey(key string) string {
 
 // GenerateSigV4Credentials generates stateless SigV4 credentials with embedded policy
 func (a *AuthService) GenerateSigV4Credentials(req *requests.CreateSigV4Request) (*responses.CreateSigV4Response, error) {
-	// Generate access key (AWS format: 20 characters)
 	accessKeyBytes, err := generateRandomKey(15)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access key: %w", err)

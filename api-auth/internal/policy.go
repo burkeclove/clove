@@ -46,16 +46,16 @@ func BuildIAMPolicy(req *requests.CreateSigV4Request) (*IAMPolicy, error) {
 	// Add bucket-specific permissions
 	for _, bucket := range req.Buckets {
 		// Handle bucket-level actions (ListBucket, etc.)
-		bucketResource := fmt.Sprintf("arn:aws:s3:::%s", bucket.BucketID)
+		bucketResource := fmt.Sprintf("arn:clove:s3:::%s", bucket.BucketID)
 
 		// Handle object-level actions (GetObject, PutObject, etc.)
 		var objectResources []string
 		if len(bucket.Prefixes) > 0 {
 			for _, prefix := range bucket.Prefixes {
-				objectResources = append(objectResources, fmt.Sprintf("arn:aws:s3:::%s/%s*", bucket.BucketID, prefix))
+				objectResources = append(objectResources, fmt.Sprintf("arn:clove:s3:::%s/%s*", bucket.BucketID, prefix))
 			}
 		} else {
-			objectResources = append(objectResources, fmt.Sprintf("arn:aws:s3:::%s/*", bucket.BucketID))
+			objectResources = append(objectResources, fmt.Sprintf("arn:clove:s3:::%s/*", bucket.BucketID))
 		}
 
 		stmt := Statement{
@@ -85,7 +85,7 @@ func buildConditions(cond *requests.Conditions) map[string]interface{} {
 
 	if len(cond.IPAllowlist) > 0 {
 		conditions["IpAddress"] = map[string]interface{}{
-			"aws:SourceIp": cond.IPAllowlist,
+			"clove:SourceIp": cond.IPAllowlist,
 		}
 	}
 
