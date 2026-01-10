@@ -113,7 +113,10 @@ Each service has a `.env` file in its directory with the following variables:
 **api-auth/.env**:
 ```
 DATABASE_URL=postgres://cloveuser:clovepassword@postgres:5432/clovedb?sslmode=disable
+SIGV4_MASTER_SECRET=ac983692bf1eb2fb4d32d41d5d518f9f55b867b45aad1df9a7519d7b633f00be
 ```
+
+**Note**: The `SIGV4_MASTER_SECRET` is a 256-bit (32 byte) hex-encoded value used to deterministically derive SigV4 secret keys from access keys using HMAC-SHA256. This enables stateless credential verification without storing secrets in the database.
 
 **api-portal-users/.env**:
 ```

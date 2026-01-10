@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -10,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -35,9 +37,10 @@ type SigV4Claims struct {
 }
 
 type AuthService struct {
-	Q *sqlc.Queries
+	Q                 *sqlc.Queries
 	pb.UnimplementedAuthServiceServer
-	JwtService *JwtService
+	JwtService        *JwtService
+	SigV4MasterSecret []byte
 }
 
 func NewAuthService(q *sqlc.Queries) *AuthService {
@@ -64,7 +67,25 @@ func NewAuthService(q *sqlc.Queries) *AuthService {
 	if err != nil {
 		log.Fatalf("an error occured while creating jwt svc %s", err.Error())
 	}
-	return &AuthService{Q: q, JwtService: jwtSvc}
+
+	// Load SigV4 master secret from environment
+	masterSecretHex := os.Getenv("SIGV4_MASTER_SECRET")
+	if masterSecretHex == "" {
+		log.Fatal("SIGV4_MASTER_SECRET environment variable is required")
+	}
+	masterSecret, err := hex.DecodeString(masterSecretHex)
+	if err != nil {
+		log.Fatalf("failed to decode SIGV4_MASTER_SECRET: %s", err.Error())
+	}
+	if len(masterSecret) != 32 {
+		log.Fatalf("SIGV4_MASTER_SECRET must be 32 bytes (256 bits), got %d bytes", len(masterSecret))
+	}
+
+	return &AuthService{
+		Q:                 q,
+		JwtService:        jwtSvc,
+		SigV4MasterSecret: masterSecret,
+	}
 }
 
 func (a *AuthService) CreateApiKey(c *gin.Context) {
@@ -384,21 +405,35 @@ func (a *AuthService) HashApiKey(key string) string {
 	return keyHash
 }
 
+// deriveSecretKey derives a deterministic secret key from an access key using HMAC-SHA256
+// This allows us to regenerate the secret key on-demand without storing it
+func (a *AuthService) deriveSecretKey(accessKey string) string {
+	mac := hmac.New(sha256.New, a.SigV4MasterSecret)
+	mac.Write([]byte(accessKey))
+	secretBytes := mac.Sum(nil)
+	// Return as base64 for AWS-compatible format (40 chars)
+	return base64.StdEncoding.EncodeToString(secretBytes)[:40]
+}
+
+// DeriveSecretKeyFromAccessKey is a public wrapper for deriving secret keys during authentication
+// Use this when you receive a SigV4 signed request and need to verify the signature
+func (a *AuthService) DeriveSecretKeyFromAccessKey(accessKey string) string {
+	return a.deriveSecretKey(accessKey)
+}
+
 // GenerateSigV4Credentials generates stateless SigV4 credentials with embedded policy
 func (a *AuthService) GenerateSigV4Credentials(req *requests.CreateSigV4Request) (*responses.CreateSigV4Response, error) {
 	log.Println("about to generate sigv4 creds...")
+	// Generate access key (20 characters, AWS format)
 	accessKeyBytes, err := generateRandomKey(15)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access key: %w", err)
 	}
-	accessKey := "AKIA" + accessKeyBytes[:16] 
+	accessKey := "AKIA" + accessKeyBytes[:16]
 
-	log.Println("about to generate sigv4 creds...")
-	secretKeyBytes, err := generateRandomKey(30)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate secret key: %w", err)
-	}
-	secretKey := secretKeyBytes[:40]
+	// Derive secret key deterministically from access key using HMAC
+	log.Println("deriving secret key from access key...")
+	secretKey := a.deriveSecretKey(accessKey)
 
 	log.Println("about to build iam policy")
 	// Build IAM policy from request
@@ -442,7 +477,21 @@ func (a *AuthService) GenerateSigV4Credentials(req *requests.CreateSigV4Request)
 	}, nil
 }
 
-// ValidateSigV4SessionToken validates a session token and returns the embedded policy
+func (a *AuthService) AuthenticateSigV4(ctx context.Context, req *pb.AuthenticateSigV4Request) (*pb.AuthenticateSigV4Response, error) {
+	claims, err := a.ValidateSigV4SessionToken(req.AuthorizationHeader)
+	if err != nil {
+		return &pb.AuthenticateSigV4Response{
+			Success: false,
+			ErrorMessage: err.Error(),
+		}, nil
+	}
+	return &pb.AuthenticateSigV4Response{
+		Success: true,
+		OrgId: claims.OrgID,
+		Policy: claims.Policy,
+	}, nil
+}
+
 func (a *AuthService) ValidateSigV4SessionToken(sessionToken string) (*SigV4Claims, error) {
 	parser := jwt.NewParser(
 		jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()}),

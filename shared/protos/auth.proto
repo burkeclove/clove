@@ -11,6 +11,7 @@ service AuthService {
     rpc CreateJwt(CreateJwtRequest) returns (CreateJwtResponse);
     rpc CheckUserOrganization(CheckUserOrganizationRequest) returns (CheckUserOrganizationResponse);
     rpc HashPassword(HashPasswordRequest) returns (HashPasswordResponse);
+    rpc AuthenticateSigV4(AuthenticateSigV4Request) returns (AuthenticateSigV4Response);
 }
 
 message AuthenticateKeyRequest {
@@ -78,4 +79,15 @@ message HashPasswordResponse {
   bool success = 1;
   string error_message = 2;
   string password_hash = 3;
+}
+
+message AuthenticateSigV4Request {
+  string authorization_header = 1;
+}
+
+message AuthenticateSigV4Response {
+  bool success = 1;
+  string error_message = 2;
+  string org_id = 3;
+  string policy = 4;
 }

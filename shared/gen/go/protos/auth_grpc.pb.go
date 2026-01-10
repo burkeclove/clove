@@ -25,6 +25,7 @@ const (
 	AuthService_CreateJwt_FullMethodName             = "/pb.AuthService/CreateJwt"
 	AuthService_CheckUserOrganization_FullMethodName = "/pb.AuthService/CheckUserOrganization"
 	AuthService_HashPassword_FullMethodName          = "/pb.AuthService/HashPassword"
+	AuthService_AuthenticateSigV4_FullMethodName     = "/pb.AuthService/AuthenticateSigV4"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -37,6 +38,7 @@ type AuthServiceClient interface {
 	CreateJwt(ctx context.Context, in *CreateJwtRequest, opts ...grpc.CallOption) (*CreateJwtResponse, error)
 	CheckUserOrganization(ctx context.Context, in *CheckUserOrganizationRequest, opts ...grpc.CallOption) (*CheckUserOrganizationResponse, error)
 	HashPassword(ctx context.Context, in *HashPasswordRequest, opts ...grpc.CallOption) (*HashPasswordResponse, error)
+	AuthenticateSigV4(ctx context.Context, in *AuthenticateSigV4Request, opts ...grpc.CallOption) (*AuthenticateSigV4Response, error)
 }
 
 type authServiceClient struct {
@@ -107,6 +109,16 @@ func (c *authServiceClient) HashPassword(ctx context.Context, in *HashPasswordRe
 	return out, nil
 }
 
+func (c *authServiceClient) AuthenticateSigV4(ctx context.Context, in *AuthenticateSigV4Request, opts ...grpc.CallOption) (*AuthenticateSigV4Response, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthenticateSigV4Response)
+	err := c.cc.Invoke(ctx, AuthService_AuthenticateSigV4_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations should embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -117,6 +129,7 @@ type AuthServiceServer interface {
 	CreateJwt(context.Context, *CreateJwtRequest) (*CreateJwtResponse, error)
 	CheckUserOrganization(context.Context, *CheckUserOrganizationRequest) (*CheckUserOrganizationResponse, error)
 	HashPassword(context.Context, *HashPasswordRequest) (*HashPasswordResponse, error)
+	AuthenticateSigV4(context.Context, *AuthenticateSigV4Request) (*AuthenticateSigV4Response, error)
 }
 
 // UnimplementedAuthServiceServer should be embedded to have
@@ -143,6 +156,9 @@ func (UnimplementedAuthServiceServer) CheckUserOrganization(context.Context, *Ch
 }
 func (UnimplementedAuthServiceServer) HashPassword(context.Context, *HashPasswordRequest) (*HashPasswordResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HashPassword not implemented")
+}
+func (UnimplementedAuthServiceServer) AuthenticateSigV4(context.Context, *AuthenticateSigV4Request) (*AuthenticateSigV4Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AuthenticateSigV4 not implemented")
 }
 func (UnimplementedAuthServiceServer) testEmbeddedByValue() {}
 
@@ -272,6 +288,24 @@ func _AuthService_HashPassword_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_AuthenticateSigV4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthenticateSigV4Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).AuthenticateSigV4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_AuthenticateSigV4_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).AuthenticateSigV4(ctx, req.(*AuthenticateSigV4Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -302,6 +336,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HashPassword",
 			Handler:    _AuthService_HashPassword_Handler,
+		},
+		{
+			MethodName: "AuthenticateSigV4",
+			Handler:    _AuthService_AuthenticateSigV4_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

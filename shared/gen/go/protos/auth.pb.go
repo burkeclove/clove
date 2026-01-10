@@ -701,6 +701,118 @@ func (x *HashPasswordResponse) GetPasswordHash() string {
 	return ""
 }
 
+type AuthenticateSigV4Request struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	AuthorizationHeader string                 `protobuf:"bytes,1,opt,name=authorization_header,json=authorizationHeader,proto3" json:"authorization_header,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *AuthenticateSigV4Request) Reset() {
+	*x = AuthenticateSigV4Request{}
+	mi := &file_protos_auth_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthenticateSigV4Request) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthenticateSigV4Request) ProtoMessage() {}
+
+func (x *AuthenticateSigV4Request) ProtoReflect() protoreflect.Message {
+	mi := &file_protos_auth_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthenticateSigV4Request.ProtoReflect.Descriptor instead.
+func (*AuthenticateSigV4Request) Descriptor() ([]byte, []int) {
+	return file_protos_auth_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *AuthenticateSigV4Request) GetAuthorizationHeader() string {
+	if x != nil {
+		return x.AuthorizationHeader
+	}
+	return ""
+}
+
+type AuthenticateSigV4Response struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	ErrorMessage  string                 `protobuf:"bytes,2,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	OrgId         string                 `protobuf:"bytes,3,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	Policy        string                 `protobuf:"bytes,4,opt,name=policy,proto3" json:"policy,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuthenticateSigV4Response) Reset() {
+	*x = AuthenticateSigV4Response{}
+	mi := &file_protos_auth_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthenticateSigV4Response) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthenticateSigV4Response) ProtoMessage() {}
+
+func (x *AuthenticateSigV4Response) ProtoReflect() protoreflect.Message {
+	mi := &file_protos_auth_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthenticateSigV4Response.ProtoReflect.Descriptor instead.
+func (*AuthenticateSigV4Response) Descriptor() ([]byte, []int) {
+	return file_protos_auth_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *AuthenticateSigV4Response) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *AuthenticateSigV4Response) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+func (x *AuthenticateSigV4Response) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *AuthenticateSigV4Response) GetPolicy() string {
+	if x != nil {
+		return x.Policy
+	}
+	return ""
+}
+
 var File_protos_auth_proto protoreflect.FileDescriptor
 
 const file_protos_auth_proto_rawDesc = "" +
@@ -749,14 +861,22 @@ const file_protos_auth_proto_rawDesc = "" +
 	"\x14HashPasswordResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12#\n" +
 	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\x12#\n" +
-	"\rpassword_hash\x18\x03 \x01(\tR\fpasswordHash2\xba\x03\n" +
+	"\rpassword_hash\x18\x03 \x01(\tR\fpasswordHash\"M\n" +
+	"\x18AuthenticateSigV4Request\x121\n" +
+	"\x14authorization_header\x18\x01 \x01(\tR\x13authorizationHeader\"\x89\x01\n" +
+	"\x19AuthenticateSigV4Response\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12#\n" +
+	"\rerror_message\x18\x02 \x01(\tR\ferrorMessage\x12\x15\n" +
+	"\x06org_id\x18\x03 \x01(\tR\x05orgId\x12\x16\n" +
+	"\x06policy\x18\x04 \x01(\tR\x06policy2\x8c\x04\n" +
 	"\vAuthService\x12J\n" +
 	"\x0fAuthenticateKey\x12\x1a.pb.AuthenticateKeyRequest\x1a\x1b.pb.AuthenticateKeyResponse\x12J\n" +
 	"\x0fAuthenticateJwt\x12\x1a.pb.AuthenticateJwtRequest\x1a\x1b.pb.AuthenticateJwtResponse\x128\n" +
 	"\tCreateKey\x12\x14.pb.CreateKeyRequest\x1a\x15.pb.CreateKeyResponse\x128\n" +
 	"\tCreateJwt\x12\x14.pb.CreateJwtRequest\x1a\x15.pb.CreateJwtResponse\x12\\\n" +
 	"\x15CheckUserOrganization\x12 .pb.CheckUserOrganizationRequest\x1a!.pb.CheckUserOrganizationResponse\x12A\n" +
-	"\fHashPassword\x12\x17.pb.HashPasswordRequest\x1a\x18.pb.HashPasswordResponseB%Z#github.com/burkeclove/shared/protosb\x06proto3"
+	"\fHashPassword\x12\x17.pb.HashPasswordRequest\x1a\x18.pb.HashPasswordResponse\x12P\n" +
+	"\x11AuthenticateSigV4\x12\x1c.pb.AuthenticateSigV4Request\x1a\x1d.pb.AuthenticateSigV4ResponseB%Z#github.com/burkeclove/shared/protosb\x06proto3"
 
 var (
 	file_protos_auth_proto_rawDescOnce sync.Once
@@ -770,7 +890,7 @@ func file_protos_auth_proto_rawDescGZIP() []byte {
 	return file_protos_auth_proto_rawDescData
 }
 
-var file_protos_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_protos_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_protos_auth_proto_goTypes = []any{
 	(*AuthenticateKeyRequest)(nil),        // 0: pb.AuthenticateKeyRequest
 	(*AuthenticateKeyResponse)(nil),       // 1: pb.AuthenticateKeyResponse
@@ -784,6 +904,8 @@ var file_protos_auth_proto_goTypes = []any{
 	(*CheckUserOrganizationResponse)(nil), // 9: pb.CheckUserOrganizationResponse
 	(*HashPasswordRequest)(nil),           // 10: pb.HashPasswordRequest
 	(*HashPasswordResponse)(nil),          // 11: pb.HashPasswordResponse
+	(*AuthenticateSigV4Request)(nil),      // 12: pb.AuthenticateSigV4Request
+	(*AuthenticateSigV4Response)(nil),     // 13: pb.AuthenticateSigV4Response
 }
 var file_protos_auth_proto_depIdxs = []int32{
 	0,  // 0: pb.AuthService.AuthenticateKey:input_type -> pb.AuthenticateKeyRequest
@@ -792,14 +914,16 @@ var file_protos_auth_proto_depIdxs = []int32{
 	6,  // 3: pb.AuthService.CreateJwt:input_type -> pb.CreateJwtRequest
 	8,  // 4: pb.AuthService.CheckUserOrganization:input_type -> pb.CheckUserOrganizationRequest
 	10, // 5: pb.AuthService.HashPassword:input_type -> pb.HashPasswordRequest
-	1,  // 6: pb.AuthService.AuthenticateKey:output_type -> pb.AuthenticateKeyResponse
-	3,  // 7: pb.AuthService.AuthenticateJwt:output_type -> pb.AuthenticateJwtResponse
-	5,  // 8: pb.AuthService.CreateKey:output_type -> pb.CreateKeyResponse
-	7,  // 9: pb.AuthService.CreateJwt:output_type -> pb.CreateJwtResponse
-	9,  // 10: pb.AuthService.CheckUserOrganization:output_type -> pb.CheckUserOrganizationResponse
-	11, // 11: pb.AuthService.HashPassword:output_type -> pb.HashPasswordResponse
-	6,  // [6:12] is the sub-list for method output_type
-	0,  // [0:6] is the sub-list for method input_type
+	12, // 6: pb.AuthService.AuthenticateSigV4:input_type -> pb.AuthenticateSigV4Request
+	1,  // 7: pb.AuthService.AuthenticateKey:output_type -> pb.AuthenticateKeyResponse
+	3,  // 8: pb.AuthService.AuthenticateJwt:output_type -> pb.AuthenticateJwtResponse
+	5,  // 9: pb.AuthService.CreateKey:output_type -> pb.CreateKeyResponse
+	7,  // 10: pb.AuthService.CreateJwt:output_type -> pb.CreateJwtResponse
+	9,  // 11: pb.AuthService.CheckUserOrganization:output_type -> pb.CheckUserOrganizationResponse
+	11, // 12: pb.AuthService.HashPassword:output_type -> pb.HashPasswordResponse
+	13, // 13: pb.AuthService.AuthenticateSigV4:output_type -> pb.AuthenticateSigV4Response
+	7,  // [7:14] is the sub-list for method output_type
+	0,  // [0:7] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
@@ -816,7 +940,7 @@ func file_protos_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_protos_auth_proto_rawDesc), len(file_protos_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
