@@ -17,6 +17,7 @@ import (
 
 func PortalMiddleware(q *sqlc.Queries, validate func(ctx context.Context, token string) (*internal.Claims, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// look for api key first
 		got := c.GetHeader("Authorization")
 		if got == "" {
 			log.Println("auth header was empty")
